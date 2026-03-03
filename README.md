@@ -48,10 +48,10 @@ The platform uses a **single-container architecture** combining both frontend an
 
 ```bash
 # Clone the repository
-git clone https://github.com/abell5/luxembourg.git
+git clone https://github.com/DataResponsibly/safe-lens.git
 
 # Change to the project directory
-cd luxembourg
+cd safe-lens
 
 # Build and run the integrated container
 make run
