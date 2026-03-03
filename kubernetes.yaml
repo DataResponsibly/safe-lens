@@ -35,7 +35,7 @@ spec:
         # Combined backend and frontend container
         - name: llm-viz-combined
           # Put your own image here
-          image: ghcr.io/abell5/llm-viz:latest
+          image: ghcr.io/DataResponsibly/llm-viz:latest
           imagePullPolicy: Always
           env:
             - name: HF_TOKEN
