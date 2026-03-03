@@ -156,4 +156,4 @@ luxembourg/
 3. **Visualization**: Real-time charts display token alternatives and their probabilities
 4. **Safety Filtering**: WildGuard SafeNudge monitors content for safety issues
 5. **Interactive Editing**: Users can click on alternative tokens to regenerate from that point
-6. **Streaming Response**: All generation happens with real-time streaming for immediate feedback
+6. **Streaming Response**: All generation happens with real-time streaming for immediate feedback 
