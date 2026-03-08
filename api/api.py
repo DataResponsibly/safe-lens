@@ -8,7 +8,6 @@ import torch
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Form
 from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from . import (
     load_model,
@@ -22,7 +21,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from .wildguard_safenudge import WildGuard, WildGuardSafeNudge
 
 CUDA = torch.cuda.is_available()
-MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
+MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
 
 if "HF_TOKEN" in os.environ:
     TOKEN = os.environ["HF_TOKEN"]
@@ -35,22 +34,22 @@ ml_models = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Wildguard
-    ml_models["SAFENUDGE_TOKENIZER"] = AutoTokenizer.from_pretrained(
-        "allenai/wildguard", token=TOKEN
-    )
-    ml_models["SAFENUDGE_CLF"] = AutoModelForCausalLM.from_pretrained(
-        "allenai/wildguard", token=TOKEN
-    )
-    if CUDA:
-        ml_models["SAFENUDGE_CLF"].to("cuda")
+    # ml_models["SAFENUDGE_TOKENIZER"] = AutoTokenizer.from_pretrained(
+    #     "allenai/wildguard", token=TOKEN
+    # )
+    # ml_models["SAFENUDGE_CLF"] = AutoModelForCausalLM.from_pretrained(
+    #     "allenai/wildguard", toload_modelken=TOKEN
+    # )
+    # if CUDA:
+    #     ml_models["SAFENUDGE_CLF"].to("cuda")
 
-    ml_models["WILDGUARD"] = WildGuard(
-        model=ml_models["SAFENUDGE_CLF"], tokenizer=ml_models["SAFENUDGE_TOKENIZER"]
-    )
+    # ml_models["WILDGUARD"] = WildGuard(
+    #     model=ml_models["SAFENUDGE_CLF"], tokenizer=ml_models["SAFENUDGE_TOKENIZER"]
+    # )
 
     # LLM
     ml_models["model"], ml_models["tokenizer"] = load_model(
-        MODEL_NAME, token=TOKEN, cuda=CUDA
+        MODEL_NAME, token=TOKEN, cuda=CUDA, torch_dtype=torch.float16
     )
     yield
     # Clean up the ML models and release the resources
@@ -58,14 +57,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins="*",  # This could be a security risk...
-    allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["X-Requested-With", "Content-Type"],
-)
 
 
 @app.get("/")
@@ -107,6 +98,8 @@ async def generate(
         )
         return StreamingResponse(data, media_type="application/json")
     else:
+        error = "SafeNudge is currently unavailable due to an issue with the WildGuard API. Please try again later."
+        return {"error": error}
         data = WildGuardSafeNudge(
             model=ml_models["model"],
             tokenizer=ml_models["tokenizer"],
