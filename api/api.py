@@ -21,7 +21,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from .wildguard_safenudge import WildGuard, WildGuardSafeNudge
 
 CUDA = torch.cuda.is_available()
-MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
+MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
 
 if "HF_TOKEN" in os.environ:
     TOKEN = os.environ["HF_TOKEN"]

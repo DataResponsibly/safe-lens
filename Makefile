@@ -19,6 +19,10 @@ endif
 #################################################################################
 
 ## Build and run the container
+
+build:
+	docker build --tag 'safe-lens-frontend' --file Dockerfile.frontend .
+	docker build --tag 'safe-lens-backend' --file Dockerfile.backend .
 run:
 	podman build --tag 'llm-viz-api' .
 	podman run -p 8000:8000 --detach 'llm-viz-api'
