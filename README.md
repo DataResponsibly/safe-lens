@@ -69,7 +69,7 @@ For production deployment on Kubernetes clusters:
 kubectl create secret generic hf-token --from-literal=token=your_hf_token_here
 
 # Deploy the application
-kubectl apply -f kubernetes.yaml
+kubectl apply -f k8s/
 
 # Check deployment status
 kubectl get pods
