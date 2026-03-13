@@ -2,14 +2,15 @@ name: Docker Image
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main"]
     paths-ignore:
       - 'README.md'
       - '**/*.md'
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: llm-viz
+  IMAGE_NAME_FRONTEND: safe-lens-frontend
+  IMAGE_NAME_BACKEND: safe-lens-backend
 
 jobs:
   build:
@@ -22,15 +23,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build image
         run: |
-          echo IMAGE_NAME=$IMAGE_NAME
-          docker build . --file Dockerfile --tag $IMAGE_NAME
-        
+          echo IMAGE_NAME_FRONTEND=$IMAGE_NAME_FRONTEND
+          echo IMAGE_NAME_BACKEND=$IMAGE_NAME_BACKEND
+          docker build . --file Dockerfile.frontend --tag $IMAGE_NAME_FRONTEND
+          docker build . --file Dockerfile.backend --tag $IMAGE_NAME_BACKEND
+
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push image
         run: |
-          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME_FRONTEND
 
           # Change all uppercase characters to lowercase.
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
@@ -45,6 +48,14 @@ jobs:
           [ "$VERSION" == "main" ] && VERSION=latest
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker tag $IMAGE_NAME_FRONTEND $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
+
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME_BACKEND
+          # Change all uppercase characters to lowercase.
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker tag $IMAGE_NAME_BACKEND $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
 
