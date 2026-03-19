@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Form
+from fastapi.routing import APIRoute
 from fastapi.responses import StreamingResponse
 from typing import Optional
 from . import (
@@ -61,8 +62,22 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def root():
-    # TODO: Return info on available endpoints with description of parameters
-    return {"message": "Hello World"}
+    routes = []
+    for route in app.routes:
+        if not isinstance(route, APIRoute):
+            continue
+        if route.path in {"/docs", "/openapi.json", "/redoc"}:
+            continue
+        methods = sorted(m for m in route.methods or set() if m not in {"HEAD", "OPTIONS"})
+        routes.append(
+            {
+                "path": route.path,
+                "methods": methods,
+                "name": route.name,
+                "summary": route.summary,
+            }
+        )
+    return {"routes": routes}
 
 
 @app.post("/generate", summary="Generate an output")
