@@ -1,7 +1,7 @@
 import os
 import json
 
-# import pickle
+import pickle
 from dotenv import dotenv_values
 import pandas as pd
 import torch
@@ -17,7 +17,7 @@ from . import (
     parse_connected_json_objects,
 )
 
-# from .safenudge import SafeNudge
+from .safenudge import SafeNudge
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from .wildguard_safenudge import WildGuard, WildGuardSafeNudge
 
@@ -52,6 +52,7 @@ async def lifespan(app: FastAPI):
     ml_models["model"], ml_models["tokenizer"] = load_model(
         MODEL_NAME, token=TOKEN, cuda=CUDA, torch_dtype=torch.float16
     )
+    ml_models["SAFENUDGE_CLF"] = pickle.load(open("api/artifacts/clf_mlp_llama_1b.pkl", "rb"))
     yield
     # Clean up the ML models and release the resources
     ml_models.clear()
@@ -80,7 +81,7 @@ async def root():
     return {"routes": routes}
 
 
-@app.post("/generate", summary="Generate an output")
+@app.post("/generate", summary="Generate an output stream based on a prompt, using a LLM (Llama 3.2 1B Instruct).")
 async def generate(
     init_prompt: str = Form(...),
     k: int = Form(30),
@@ -113,9 +114,7 @@ async def generate(
         )
         return StreamingResponse(data, media_type="application/json")
     else:
-        error = "SafeNudge is currently unavailable due to an issue with the WildGuard API. Please try again later."
-        return {"error": error}
-        data = WildGuardSafeNudge(
+        data = SafeNudge(
             model=ml_models["model"],
             tokenizer=ml_models["tokenizer"],
             mode="topk",
@@ -125,8 +124,7 @@ async def generate(
             cuda=CUDA,
         ).generate_moderated(
             prompt=init_prompt,
-            # clf=SAFENUDGE_CLF,
-            clf=ml_models["WILDGUARD"],
+            clf=ml_models["SAFENUDGE_CLF"],
             target="",
             tau=tau,
             max_tokens=max_new_tokens,
@@ -149,7 +147,7 @@ def edit(
     return data
 
 
-@app.post("/regenerate", summary="Generate an output")
+@app.post("/regenerate", summary="Generate an output stream based on a prompt, using a LLM (Llama 3.2 1B Instruct). This endpoint is for regenerating output when user edits.")
 async def regenerate(
     init_prompt: str = Form(...),
     k: int = Form(30),
