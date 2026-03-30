@@ -1,9 +1,10 @@
 fastapi[standard]==0.115.0
-transformers==4.45.2
+transformers==4.55.0
 pandas==2.2.3
 numpy==2.1.2
 protobuf==6.30.2
 scikit-learn==1.5.2
 sentencepiece==0.2.0
+accelerate==1.13.0
 # For CPU version: Uncomment line below and remove cuda install from Dockerfile
 # torch==2.4.1
