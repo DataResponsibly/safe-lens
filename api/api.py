@@ -1,7 +1,6 @@
 import os
 import json
 
-import pickle
 from dotenv import dotenv_values
 import pandas as pd
 import torch
@@ -20,9 +19,11 @@ from . import (
 from .safenudge import SafeNudge
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from .wildguard_safenudge import WildGuard, WildGuardSafeNudge
+from .qwenqguard_safenudge import Qwen3GuardStream, Qwen3GuardSafeNudge
 
 CUDA = torch.cuda.is_available()
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
+QWEN_GUARD_MODEL_NAME = "Qwen/Qwen3Guard-Stream-0.6B"
 
 if "HF_TOKEN" in os.environ:
     TOKEN = os.environ["HF_TOKEN"]
@@ -52,7 +53,10 @@ async def lifespan(app: FastAPI):
     ml_models["model"], ml_models["tokenizer"] = load_model(
         MODEL_NAME, token=TOKEN, cuda=CUDA, torch_dtype=torch.float16
     )
-    ml_models["SAFENUDGE_CLF"] = pickle.load(open("api/artifacts/clf_mlp_llama_1b.pkl", "rb"))
+    ml_models["QWEN_GUARD"] = Qwen3GuardStream(
+        model_path=QWEN_GUARD_MODEL_NAME,
+        torch_dtype=torch.bfloat16 if CUDA else torch.float32,
+    )
     yield
     # Clean up the ML models and release the resources
     ml_models.clear()
@@ -114,7 +118,7 @@ async def generate(
         )
         return StreamingResponse(data, media_type="application/json")
     else:
-        data = SafeNudge(
+        data = Qwen3GuardSafeNudge(
             model=ml_models["model"],
             tokenizer=ml_models["tokenizer"],
             mode="topk",
@@ -124,7 +128,7 @@ async def generate(
             cuda=CUDA,
         ).generate_moderated(
             prompt=init_prompt,
-            clf=ml_models["SAFENUDGE_CLF"],
+            guard=ml_models["QWEN_GUARD"],
             target="",
             tau=tau,
             max_tokens=max_new_tokens,
