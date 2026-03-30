@@ -250,7 +250,7 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 							"probs": [],
 							"selected_idx": -1,
 							"selected_text": "[NUDGE]",
-							"moderation": mod_result,
+							# "moderation": mod_result,
 						}
 					) + "\n"
 				else:
@@ -268,7 +268,7 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 							"probs": [],
 							"selected_idx": -1,
 							"selected_text": next_token_str,
-							"moderation": mod_result,
+							# "moderation": mod_result,
 						}
 					) + "\n"
 		finally:
