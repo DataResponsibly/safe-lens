@@ -179,15 +179,16 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 			{"role": "assistant", "content": target},
 		]
 
-		# Generation prompt for the base model.
+		# Generation prompt for the base model (uses self.tokenizer / self.model).
 		input_ids = self._get_ids(input_dialog)
 		sentence = target
 
-		# Moderation stream context (can include assistant prefix).
+		# Moderation stream context (uses guard tokenizer, NOT the LLM tokenizer).
 		moderation_ids = guard.tokenizer.apply_chat_template(
 			input_dialog,
 			return_tensors="pt",
 			add_generation_prompt=False,
+			enable_thinking=False,
 		)[0]
 		user_end_index = self._user_end_index(moderation_ids, guard.tokenizer)
 		_, stream_state = guard.stream_moderate_from_ids(
@@ -195,6 +196,13 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 			role="user",
 			stream_state=None,
 		)
+		# Feed assistant prefix tokens (template markers + target) to the guard.
+		for i in range(user_end_index + 1, len(moderation_ids)):
+			_, stream_state = guard.stream_moderate_from_ids(
+				moderation_ids[i],
+				role="assistant",
+				stream_state=stream_state,
+			)
 
 		if verbose:
 			print(sentence, end="")
@@ -219,21 +227,29 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 				else:
 					next_token_str = self.tokenizer.decode(next_token.item())
 
-				mod_result, stream_state = guard.stream_moderate_from_ids(
-					torch.tensor(next_token.item(), dtype=torch.long),
-					role="assistant",
-					stream_state=stream_state,
-				)
+				# Re-encode the generated text with the guard tokenizer for moderation.
+				guard_token_ids = guard.tokenizer.encode(next_token_str, add_special_tokens=False)
+				for gid in guard_token_ids:
+					mod_result, stream_state = guard.stream_moderate_from_ids(
+						torch.tensor(gid, dtype=torch.long),
+						role="assistant",
+						stream_state=stream_state,
+					)
 
 				if (j >= 5) and (not nudged) and (mod_result["combined_risk_prob"] >= tau):
+					# Nudge tokens for the LLM (self.tokenizer).
 					nudge_ids = self.tokenizer(self.NUDGE + sentence)["input_ids"][1:]
 					input_ids = torch.cat(
 						(input_ids, torch.tensor(nudge_ids, dtype=torch.long).reshape(1, -1)),
 						dim=1,
 					)
-					for token_id in nudge_ids:
+					# Nudge tokens for the guard (guard.tokenizer).
+					guard_nudge_ids = guard.tokenizer.encode(
+						self.NUDGE + sentence, add_special_tokens=False
+					)
+					for gid in guard_nudge_ids:
 						_, stream_state = guard.stream_moderate_from_ids(
-							torch.tensor(token_id, dtype=torch.long),
+							torch.tensor(gid, dtype=torch.long),
 							role="assistant",
 							stream_state=stream_state,
 						)
@@ -250,7 +266,6 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 							"probs": [],
 							"selected_idx": -1,
 							"selected_text": "[NUDGE]",
-							# "moderation": mod_result,
 						}
 					) + "\n"
 				else:
@@ -268,7 +283,6 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 							"probs": [],
 							"selected_idx": -1,
 							"selected_text": next_token_str,
-							# "moderation": mod_result,
 						}
 					) + "\n"
 		finally:
