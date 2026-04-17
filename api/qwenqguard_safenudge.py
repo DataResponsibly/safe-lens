@@ -32,6 +32,7 @@ class Qwen3GuardStream:
 			torch_dtype=torch_dtype,
 			trust_remote_code=trust_remote_code,
 		).eval()
+		self.model = torch.compile(self.model)
 		self.device = self._infer_device()
 
 	def _infer_device(self) -> torch.device:
