@@ -32,6 +32,7 @@ class Qwen3GuardStream:
 			torch_dtype=torch_dtype,
 			trust_remote_code=trust_remote_code,
 		).eval()
+		self.model = torch.compile(self.model)
 		self.device = self._infer_device()
 
 	def _infer_device(self) -> torch.device:
@@ -250,7 +251,7 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 							"probs": [],
 							"selected_idx": -1,
 							"selected_text": "[NUDGE]",
-							# "moderation": mod_result,
+							"clf_prob": mod_result["combined_risk_prob"],
 						}
 					) + "\n"
 				else:
@@ -268,7 +269,7 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 							"probs": [],
 							"selected_idx": -1,
 							"selected_text": next_token_str,
-							# "moderation": mod_result,
+							"clf_prob": mod_result["combined_risk_prob"],
 						}
 					) + "\n"
 		finally:
