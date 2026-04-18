@@ -68,7 +68,15 @@ input[type="number"] {
 
 /* Token in the output stream */
 .token {
-  white-space: pre;
+  /*
+   * pre-wrap preserves the model's literal whitespace (spaces, \n, \n\n)
+   * while still allowing normal soft-wrapping when the text would overflow
+   * the output box. overflow-wrap covers the edge case of a single long
+   * token (URL, code identifier, base64, ...) that has no natural break.
+   */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   cursor: pointer;
 }
 .token-selected {

@@ -41,9 +41,9 @@ export default function ChatOutput({
   return (
     <div
       ref={scrollRef}
-      className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 leading-6"
+      className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 leading-6 break-words"
     >
-      <div className="inline text-fg/60 mr-1">&gt;</div>
+      <span className="text-fg/60 mr-1">&gt;</span>
       {tokens.map((token, i) => {
         const selected = token.idx_counter === selectedIdx;
         const bg = showUncertainty ? uncertaintyBg(token) : "transparent";
