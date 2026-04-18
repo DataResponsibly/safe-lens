@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #212121;
+  color: #f5f6fa;
+  font-family: "Andale Mono", AndaleMono, ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+  letter-spacing: 0px;
+  font-weight: 400;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/*
+ * iOS Safari zooms in automatically when an input with font-size < 16px gains
+ * focus. Force 16px on form controls at mobile widths, then scale back to the
+ * designed 14px for tablet/desktop where the issue does not apply.
+ */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select,
+  button {
+    font-size: 16px;
+  }
+}
+
+/* D3 barplot helpers (mirrors client/css/main.css) */
+.barplot-svg .domain {
+  visibility: hidden;
+}
+.barplot-svg .tick line {
+  visibility: hidden;
+}
+.barplot-svg .tick text {
+  font-family: "Andale Mono", AndaleMono, monospace;
+  letter-spacing: 1px;
+  font-size: 12px;
+  fill: #f5f6fa;
+  cursor: pointer;
+}
+.barplot-svg .bar {
+  fill: rgb(39, 174, 96);
+}
+.barplot-svg .label {
+  fill: #ffffff;
+  font-size: 12px;
+}
+
+/* Token in the output stream */
+.token {
+  /*
+   * pre-wrap preserves the model's literal whitespace (spaces, \n, \n\n)
+   * while still allowing normal soft-wrapping when the text would overflow
+   * the output box. overflow-wrap covers the edge case of a single long
+   * token (URL, code identifier, base64, ...) that has no natural break.
+   */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  cursor: pointer;
+}
+.token-selected {
+  text-decoration: underline;
+  text-decoration-color: rgb(39, 174, 96);
+  text-decoration-thickness: 3px;
+}
+
+/* Toggle switch mirroring the original .toggle styling */
+.toggle {
+  appearance: none;
+  margin: 0;
+  position: relative;
+  box-sizing: content-box;
+  width: 50px;
+  height: 20px;
+  padding: 3px;
+  cursor: pointer;
+  overflow: hidden;
+  background-color: transparent;
+  transition: background ease 0.3s;
+  border: 1px solid rgb(127, 140, 141);
+  flex-shrink: 0;
+}
+.toggle:before {
+  font-family: "Andale Mono", AndaleMono, monospace;
+  letter-spacing: 0px;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  content: "on   off";
+  display: block;
+  position: absolute;
+  z-index: 2;
+  width: 20px;
+  height: 20px;
+  text-indent: -20px;
+  word-spacing: 20px;
+  white-space: nowrap;
+  background: #f5f6fa;
+  color: #f5f6fa;
+  transition: transform cubic-bezier(0.3, 1.5, 0.7, 1) 0.2s;
+}
+.toggle:checked {
+  background-color: rgb(39, 174, 96);
+}
+.toggle:checked:before {
+  transform: translateX(30px);
+}
+
+/* Range slider */
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 26px;
+  background: transparent;
+  outline: none;
+  border: 1px solid rgb(127, 140, 141);
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  background: #f5f6fa;
+  cursor: pointer;
+}
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  background: #f5f6fa;
+  cursor: pointer;
+}
