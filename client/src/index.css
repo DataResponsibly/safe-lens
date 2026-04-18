@@ -30,6 +30,20 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/*
+ * iOS Safari zooms in automatically when an input with font-size < 16px gains
+ * focus. Force 16px on form controls at mobile widths, then scale back to the
+ * designed 14px for tablet/desktop where the issue does not apply.
+ */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select,
+  button {
+    font-size: 16px;
+  }
+}
+
 /* D3 barplot helpers (mirrors client/css/main.css) */
 .barplot-svg .domain {
   visibility: hidden;

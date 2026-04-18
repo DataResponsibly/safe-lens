@@ -101,6 +101,13 @@ export default function App() {
     }
   }, []);
 
+  const handleClear = useCallback(() => {
+    if (abortRef.current) abortRef.current.abort();
+    setTokens([]);
+    setSelectedIdx(null);
+    setErrorMessage("");
+  }, []);
+
   const handleTokenEdit = useCallback(
     (newToken) => {
       if (isStreaming) return;
@@ -144,26 +151,47 @@ export default function App() {
     }));
   }, [selectedToken]);
 
+  const hasTokens = tokens.length > 0;
+
   return (
-    <div className="min-h-screen w-full flex flex-col bg-bg text-fg">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-3">
-          <span className="text-lg tracking-wider uppercase">Safe-Lens</span>
+    <div className="h-screen h-[100dvh] w-full flex flex-col overflow-hidden bg-bg text-fg">
+      <header
+        className="flex items-center justify-between gap-2 border-b border-border px-3 sm:px-4 py-2 shrink-0"
+        style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="text-base sm:text-lg tracking-wider uppercase truncate">
+            Safe-Lens
+          </span>
           {isStreaming && (
-            <span className="text-xs text-accent animate-pulse">streaming…</span>
+            <span
+              aria-label="streaming"
+              className="inline-block w-2 h-2 rounded-full bg-accent animate-pulse shrink-0"
+            />
           )}
         </div>
-        <button
-          type="button"
-          className="md:hidden border border-border px-3 py-1 uppercase text-xs tracking-wider hover:bg-panel"
-          onClick={() => setDrawerOpen(true)}
-        >
-          Settings
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            className="border border-border px-3 min-h-[36px] uppercase text-xs tracking-wider hover:bg-panel active:bg-panel disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
+            onClick={handleClear}
+            disabled={!hasTokens && !errorMessage && !isStreaming}
+            title="Clear generation"
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            className="md:hidden border border-border px-3 min-h-[36px] uppercase text-xs tracking-wider hover:bg-panel active:bg-panel touch-manipulation"
+            onClick={() => setDrawerOpen(true)}
+          >
+            Settings
+          </button>
+        </div>
       </header>
 
-      <main className="flex-1 flex flex-col md:flex-row min-h-0">
-        <section className="flex flex-col flex-1 min-h-0 border-border md:border-r">
+      <main className="flex-1 min-h-0 flex flex-col md:flex-row">
+        <section className="flex flex-col flex-1 min-h-0 min-w-0 border-border md:border-r">
           <ChatOutput
             tokens={tokens}
             selectedIdx={selectedIdx}
@@ -181,7 +209,7 @@ export default function App() {
           />
         </section>
 
-        <aside className="hidden md:flex md:w-[340px] lg:w-[380px] flex-col">
+        <aside className="hidden md:flex md:w-[340px] lg:w-[380px] flex-col min-h-0">
           <SettingsPanelContent
             settings={settings}
             onChange={handleSettingsChange}
@@ -198,12 +226,18 @@ export default function App() {
             className="flex-1 bg-black/60"
             onClick={() => setDrawerOpen(false)}
           />
-          <div className="w-[85%] max-w-sm bg-bg border-l border-border flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <div
+            className="w-[90%] max-w-sm bg-bg border-l border-border flex flex-col min-h-0"
+            style={{
+              paddingTop: "env(safe-area-inset-top)",
+              paddingBottom: "env(safe-area-inset-bottom)",
+            }}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
               <span className="uppercase tracking-wider text-sm">Settings</span>
               <button
                 type="button"
-                className="border border-border px-2 py-1 text-xs uppercase"
+                className="border border-border px-3 min-h-[36px] text-xs uppercase touch-manipulation"
                 onClick={() => setDrawerOpen(false)}
               >
                 Close
@@ -232,14 +266,14 @@ function SettingsPanelContent({
 }) {
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex-1 min-h-[260px] border-b border-border p-3 overflow-hidden">
+      <div className="h-[42%] min-h-[240px] max-h-[460px] shrink-0 border-b border-border p-3 overflow-hidden">
         <Barplot
           data={barplotData}
           onTickClick={onTokenEdit}
           disabled={safenudgeActive}
         />
       </div>
-      <div className="p-3 overflow-y-auto">
+      <div className="flex-1 min-h-0 p-3 overflow-y-auto overscroll-contain">
         <SettingsPanel settings={settings} onChange={onChange} />
       </div>
     </div>
