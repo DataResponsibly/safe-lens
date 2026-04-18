@@ -30,7 +30,8 @@ export default function App() {
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [chartDrawerOpen, setChartDrawerOpen] = useState(false);
+  const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
 
   const abortRef = useRef(null);
   const lastPromptRef = useRef("");
@@ -108,6 +109,14 @@ export default function App() {
     setErrorMessage("");
   }, []);
 
+  const handleSelectToken = useCallback((idx) => {
+    setSelectedIdx(idx);
+    // On mobile (where the right-side aside is hidden) the chart drawer is
+    // the only place the bar chart can appear, so open it automatically.
+    // The drawer itself is `md:hidden`, so this is a no-op on desktop.
+    setChartDrawerOpen(true);
+  }, []);
+
   const handleTokenEdit = useCallback(
     (newToken) => {
       if (isStreaming) return;
@@ -183,7 +192,15 @@ export default function App() {
           <button
             type="button"
             className="md:hidden border border-border px-3 min-h-[36px] uppercase text-xs tracking-wider hover:bg-panel active:bg-panel touch-manipulation"
-            onClick={() => setDrawerOpen(true)}
+            onClick={() => setChartDrawerOpen(true)}
+            title="Show probabilities"
+          >
+            Chart
+          </button>
+          <button
+            type="button"
+            className="md:hidden border border-border px-3 min-h-[36px] uppercase text-xs tracking-wider hover:bg-panel active:bg-panel touch-manipulation"
+            onClick={() => setSettingsDrawerOpen(true)}
           >
             Settings
           </button>
@@ -195,7 +212,7 @@ export default function App() {
           <ChatOutput
             tokens={tokens}
             selectedIdx={selectedIdx}
-            onSelectToken={setSelectedIdx}
+            onSelectToken={handleSelectToken}
             showUncertainty={settings.uncertainty}
             safenudgeActive={settings.safenudge}
             errorMessage={errorMessage}
@@ -210,7 +227,7 @@ export default function App() {
         </section>
 
         <aside className="hidden md:flex md:w-[380px] lg:w-[440px] xl:w-[500px] flex-col min-h-0">
-          <SettingsPanelContent
+          <DesktopRightPanel
             settings={settings}
             onChange={handleSettingsChange}
             barplotData={barplotData}
@@ -220,44 +237,66 @@ export default function App() {
         </aside>
       </main>
 
-      {drawerOpen && (
-        <div className="md:hidden fixed inset-0 z-40 flex">
-          <div
-            className="flex-1 bg-black/60"
-            onClick={() => setDrawerOpen(false)}
-          />
-          <div
-            className="w-[90%] max-w-sm bg-bg border-l border-border flex flex-col min-h-0"
-            style={{
-              paddingTop: "env(safe-area-inset-top)",
-              paddingBottom: "env(safe-area-inset-bottom)",
-            }}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-              <span className="uppercase tracking-wider text-sm">Settings</span>
-              <button
-                type="button"
-                className="border border-border px-3 min-h-[36px] text-xs uppercase touch-manipulation"
-                onClick={() => setDrawerOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            <SettingsPanelContent
-              settings={settings}
-              onChange={handleSettingsChange}
-              barplotData={barplotData}
-              safenudgeActive={settings.safenudge}
-              onTokenEdit={handleTokenEdit}
+      {chartDrawerOpen && (
+        <MobileDrawer
+          title="Probabilities"
+          onClose={() => setChartDrawerOpen(false)}
+        >
+          <div className="flex-1 min-h-0 p-3">
+            <Barplot
+              data={barplotData}
+              onTickClick={handleTokenEdit}
+              disabled={settings.safenudge}
             />
           </div>
-        </div>
+        </MobileDrawer>
+      )}
+
+      {settingsDrawerOpen && (
+        <MobileDrawer
+          title="Settings"
+          onClose={() => setSettingsDrawerOpen(false)}
+        >
+          <div className="flex-1 min-h-0 p-3 overflow-y-auto overscroll-contain">
+            <SettingsPanel
+              settings={settings}
+              onChange={handleSettingsChange}
+            />
+          </div>
+        </MobileDrawer>
       )}
     </div>
   );
 }
 
-function SettingsPanelContent({
+function MobileDrawer({ title, onClose, children }) {
+  return (
+    <div className="md:hidden fixed inset-0 z-40 flex">
+      <div className="flex-1 bg-black/60" onClick={onClose} />
+      <div
+        className="w-[90%] max-w-sm bg-bg border-l border-border flex flex-col min-h-0"
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+          <span className="uppercase tracking-wider text-sm">{title}</span>
+          <button
+            type="button"
+            className="border border-border px-3 min-h-[36px] text-xs uppercase touch-manipulation"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function DesktopRightPanel({
   settings,
   onChange,
   barplotData,
