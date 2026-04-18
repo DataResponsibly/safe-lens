@@ -209,7 +209,7 @@ export default function App() {
           />
         </section>
 
-        <aside className="hidden md:flex md:w-[340px] lg:w-[380px] flex-col min-h-0">
+        <aside className="hidden md:flex md:w-[380px] lg:w-[440px] xl:w-[500px] flex-col min-h-0">
           <SettingsPanelContent
             settings={settings}
             onChange={handleSettingsChange}
@@ -264,17 +264,39 @@ function SettingsPanelContent({
   safenudgeActive,
   onTokenEdit,
 }) {
+  const [settingsOpen, setSettingsOpen] = useState(true);
+
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="h-[42%] min-h-[240px] max-h-[460px] shrink-0 border-b border-border p-3 overflow-hidden">
+      <div className="flex-1 min-h-[260px] border-b border-border p-3 overflow-hidden">
         <Barplot
           data={barplotData}
           onTickClick={onTokenEdit}
           disabled={safenudgeActive}
         />
       </div>
-      <div className="flex-1 min-h-0 p-3 overflow-y-auto overscroll-contain">
-        <SettingsPanel settings={settings} onChange={onChange} />
+      <div
+        className={
+          "shrink-0 flex flex-col min-h-0 " +
+          (settingsOpen ? "max-h-[55%]" : "")
+        }
+      >
+        <button
+          type="button"
+          onClick={() => setSettingsOpen((v) => !v)}
+          aria-expanded={settingsOpen}
+          className="flex items-center justify-between w-full px-3 py-2 border-t border-border text-xs uppercase tracking-wider hover:bg-panel touch-manipulation"
+        >
+          <span>Settings</span>
+          <span aria-hidden="true" className="text-fg/70">
+            {settingsOpen ? "\u25BE" : "\u25B8"}
+          </span>
+        </button>
+        {settingsOpen && (
+          <div className="flex-1 min-h-0 p-3 overflow-y-auto overscroll-contain">
+            <SettingsPanel settings={settings} onChange={onChange} />
+          </div>
+        )}
       </div>
     </div>
   );

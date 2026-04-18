@@ -1,20 +1,23 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 
-const MARGIN = { top: 20, right: 30, bottom: 40, left: 100 };
-const BASE_WIDTH = 260;
-const BASE_HEIGHT = 415;
+const MARGIN = { top: 16, right: 24, bottom: 32, left: 96 };
+const MIN_WIDTH = 220;
+const MIN_HEIGHT = 240;
 
 /**
  * React wrapper around the original D3 barplot from client/js/main.js (barplot_new).
  * Renders a horizontal bar chart of candidate tokens with their probabilities.
- * Clicking a tick label fires `onTickClick(tokenText)` so the parent can
- * trigger a regenerate request.
+ * Observes its container so the chart always fills the available space (no
+ * fixed-aspect letterboxing). Clicking a tick label fires
+ * `onTickClick(tokenText)` so the parent can trigger a regenerate request.
  */
 export default function Barplot({ data, onTickClick, disabled }) {
+  const containerRef = useRef(null);
   const svgRef = useRef(null);
   const onTickClickRef = useRef(onTickClick);
   const disabledRef = useRef(disabled);
+  const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     onTickClickRef.current = onTickClick;
@@ -24,21 +27,39 @@ export default function Barplot({ data, onTickClick, disabled }) {
   }, [disabled]);
 
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      setSize({
+        width: Math.max(MIN_WIDTH, Math.floor(rect.width)),
+        height: Math.max(MIN_HEIGHT, Math.floor(rect.height)),
+      });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
     const svgEl = svgRef.current;
     if (!svgEl) return;
 
     d3.select(svgEl).selectAll("*").remove();
 
     if (!data || data.length === 0) return;
+    if (size.width === 0 || size.height === 0) return;
 
-    const width = BASE_WIDTH - MARGIN.left - MARGIN.right;
-    const height = BASE_HEIGHT - MARGIN.top - MARGIN.bottom;
+    const { width: outerW, height: outerH } = size;
+    const width = outerW - MARGIN.left - MARGIN.right;
+    const height = outerH - MARGIN.top - MARGIN.bottom;
 
     d3.select(svgEl)
-      .attr("viewBox", `0 0 ${BASE_WIDTH} ${BASE_HEIGHT}`)
-      .attr("preserveAspectRatio", "xMidYMid meet")
-      .attr("width", "100%")
-      .attr("height", "100%");
+      .attr("viewBox", `0 0 ${outerW} ${outerH}`)
+      .attr("preserveAspectRatio", "none")
+      .attr("width", outerW)
+      .attr("height", outerH);
 
     const svg = d3
       .select(svgEl)
@@ -102,20 +123,20 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("dx", "8px")
       .text((d) => (Number(d.prob) === 0 ? "<0.01" : d.prob))
       .attr("fill", "white");
-  }, [data]);
+  }, [data, size]);
 
-  if (!data || data.length === 0) {
-    return (
-      <div className="h-full flex items-center justify-center text-center text-fg/50 text-xs px-4">
-        Tap any generated token to inspect the top-k candidate probabilities
-        here.
-      </div>
-    );
-  }
+  const hasData = data && data.length > 0;
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
-      <svg ref={svgRef} className="barplot-svg w-full h-full" />
+    <div ref={containerRef} className="w-full h-full relative">
+      {hasData ? (
+        <svg ref={svgRef} className="barplot-svg block" />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-center text-fg/50 text-xs px-4">
+          Tap any generated token to inspect the top-k candidate probabilities
+          here.
+        </div>
+      )}
     </div>
   );
 }
