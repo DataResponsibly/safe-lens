@@ -27,6 +27,7 @@ export default function App() {
   const [prompt, setPrompt] = useState("");
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [tokens, setTokens] = useState([]);
+  const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -34,7 +35,6 @@ export default function App() {
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
 
   const abortRef = useRef(null);
-  const lastPromptRef = useRef("");
 
   const selectedToken = useMemo(() => {
     if (selectedIdx === null) return null;
@@ -75,7 +75,7 @@ export default function App() {
       const trimmed = text.trim();
       if (!trimmed || isStreaming) return;
 
-      lastPromptRef.current = trimmed;
+      setSubmittedPrompt(trimmed);
       setPrompt("");
       setTokens([]);
       setSelectedIdx(null);
@@ -105,6 +105,7 @@ export default function App() {
   const handleClear = useCallback(() => {
     if (abortRef.current) abortRef.current.abort();
     setTokens([]);
+    setSubmittedPrompt("");
     setSelectedIdx(null);
     setErrorMessage("");
   }, []);
@@ -125,7 +126,7 @@ export default function App() {
         return;
       }
       if (selectedIdx === null) return;
-      const initPrompt = lastPromptRef.current;
+      const initPrompt = submittedPrompt;
       if (!initPrompt) return;
 
       const content = JSON.stringify(tokens);
@@ -148,7 +149,7 @@ export default function App() {
       };
       runStream(streamRegenerate, params);
     },
-    [isStreaming, runStream, selectedIdx, settings, tokens]
+    [isStreaming, runStream, selectedIdx, settings, submittedPrompt, tokens]
   );
 
   const barplotData = useMemo(() => {
@@ -161,6 +162,7 @@ export default function App() {
   }, [selectedToken]);
 
   const hasTokens = tokens.length > 0;
+  const canClear = hasTokens || !!submittedPrompt || !!errorMessage || isStreaming;
 
   return (
     <div className="h-screen h-[100dvh] w-full flex flex-col overflow-hidden bg-bg text-fg">
@@ -184,7 +186,7 @@ export default function App() {
             type="button"
             className="border border-border px-3 min-h-[36px] uppercase text-xs tracking-wider hover:bg-panel active:bg-panel disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
             onClick={handleClear}
-            disabled={!hasTokens && !errorMessage && !isStreaming}
+            disabled={!canClear}
             title="Clear generation"
           >
             Clear
@@ -210,6 +212,7 @@ export default function App() {
       <main className="flex-1 min-h-0 flex flex-col md:flex-row">
         <section className="flex flex-col flex-1 min-h-0 min-w-0 border-border md:border-r">
           <ChatOutput
+            prompt={submittedPrompt}
             tokens={tokens}
             selectedIdx={selectedIdx}
             onSelectToken={handleSelectToken}
