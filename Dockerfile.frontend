@@ -13,10 +13,9 @@ RUN npm run build
 ## Stage 2: serve the built static bundle with unprivileged Nginx + reverse proxy to backend
 FROM nginxinc/nginx-unprivileged:alpine
 
-RUN rm -f /etc/nginx/conf.d/default.conf && rm -rf /usr/share/nginx/html/*
-
-COPY --from=build /app/dist/ /usr/share/nginx/html/
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# COPY overwrites default.conf and static assets; unprivileged base image sets pid/temp under /tmp.
+COPY --chown=nginx:nginx --from=build /app/dist/ /usr/share/nginx/html/
+COPY --chown=nginx:nginx nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 8080
 
