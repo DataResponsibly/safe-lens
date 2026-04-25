@@ -23,6 +23,28 @@ function resolveRandomSeed(input) {
   return Math.floor(Math.random() * 10000) + 1;
 }
 
+function resolveTemperature(input) {
+  if (input === "" || input === null || input === undefined) return null;
+  const n = Number(input);
+  return Number.isFinite(n) ? n : null;
+}
+
+function resolveTopK(input) {
+  if (input === "" || input === null || input === undefined) return null;
+  const n = Number(input);
+  if (!Number.isFinite(n)) return null;
+  const k = Math.floor(n);
+  return k >= 1 ? k : null;
+}
+
+function resolveMaxNewTokens(input) {
+  if (input === "" || input === null || input === undefined) return null;
+  const n = Number(input);
+  if (!Number.isFinite(n)) return null;
+  const maxNewTokens = Math.floor(n);
+  return maxNewTokens >= 1 ? maxNewTokens : null;
+}
+
 export default function App() {
   const [prompt, setPrompt] = useState("");
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
@@ -74,6 +96,21 @@ export default function App() {
     (text) => {
       const trimmed = text.trim();
       if (!trimmed || isStreaming) return;
+      const topK = resolveTopK(settings.k);
+      if (topK === null) {
+        alert("Please enter a top-k value of at least 1 before generating.");
+        return;
+      }
+      const temperature = resolveTemperature(settings.T);
+      if (temperature === null) {
+        alert("Please enter a temperature value before generating.");
+        return;
+      }
+      const maxNewTokens = resolveMaxNewTokens(settings.maxNewTokens);
+      if (maxNewTokens === null) {
+        alert("Please enter max new tokens of at least 1 before generating.");
+        return;
+      }
 
       setSubmittedPrompt(trimmed);
       setPrompt("");
@@ -84,9 +121,9 @@ export default function App() {
       const params = {
         init_prompt: trimmed,
         safenudge: settings.safenudge,
-        k: settings.k,
-        T: settings.T,
-        max_new_tokens: settings.maxNewTokens,
+        k: topK,
+        T: temperature,
+        max_new_tokens: maxNewTokens,
         verbose: false,
         random_state: seed,
         sleep_time: settings.sleepTime,
@@ -125,6 +162,21 @@ export default function App() {
         alert("Token editing is not allowed while SafeNudge is activated.");
         return;
       }
+      const topK = resolveTopK(settings.k);
+      if (topK === null) {
+        alert("Please enter a top-k value of at least 1 before regenerating.");
+        return;
+      }
+      const temperature = resolveTemperature(settings.T);
+      if (temperature === null) {
+        alert("Please enter a temperature value before regenerating.");
+        return;
+      }
+      const maxNewTokens = resolveMaxNewTokens(settings.maxNewTokens);
+      if (maxNewTokens === null) {
+        alert("Please enter max new tokens of at least 1 before regenerating.");
+        return;
+      }
       if (selectedIdx === null) return;
       const initPrompt = submittedPrompt;
       if (!initPrompt) return;
@@ -140,9 +192,9 @@ export default function App() {
         content,
         token_pos: tokenPos,
         new_token: newToken,
-        k: settings.k,
-        T: settings.T,
-        max_new_tokens: settings.maxNewTokens,
+        k: topK,
+        T: temperature,
+        max_new_tokens: maxNewTokens,
         sleep_time: settings.sleepTime,
         verbose: true,
         random_state: seed,

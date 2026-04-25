@@ -57,34 +57,25 @@ export default function SettingsPanel({ settings, onChange }) {
           max="4096"
           step="1"
           value={settings.maxNewTokens}
-          onChange={setNumber("maxNewTokens", { min: 1, max: 4096 })}
+          onChange={setNumber("maxNewTokens", { min: 1, max: 4096, allowEmpty: true })}
           className="w-24 h-[26px] bg-transparent border border-border px-2 text-fg tracking-wider"
         />
       </Row>
 
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <span>Delay</span>
-          <span className="text-fg/60">{Number(settings.sleepTime).toFixed(1)}s</span>
-        </div>
-        <div className="relative">
-          <div className="absolute top-2 left-2 text-xs text-fg/50 pointer-events-none">
-            0s
-          </div>
-          <div className="absolute top-2 right-2 text-xs text-fg/50 pointer-events-none">
-            2s
-          </div>
+      <Row label="Delay (0-2s)">
+        <div className="flex items-center gap-2">
           <input
-            type="range"
+            type="number"
             min="0"
             max="2"
             step="0.1"
             value={settings.sleepTime}
             onChange={setNumber("sleepTime", { min: 0, max: 2 })}
-            className="slider"
+            className="w-24 h-[26px] bg-transparent border border-border px-2 text-fg"
           />
+          <span className="text-fg/60">s</span>
         </div>
-      </div>
+      </Row>
 
       <details className="border border-border">
         <summary className="px-2 py-1 cursor-pointer uppercase text-xs tracking-wider">
@@ -98,7 +89,7 @@ export default function SettingsPanel({ settings, onChange }) {
               max="200"
               step="1"
               value={settings.k}
-              onChange={setNumber("k", { min: 1, max: 200 })}
+              onChange={setNumber("k", { min: 1, max: 200, allowEmpty: true })}
               className="w-24 h-[26px] bg-transparent border border-border px-2 text-fg"
             />
           </Row>
@@ -109,7 +100,7 @@ export default function SettingsPanel({ settings, onChange }) {
               max="5"
               step="0.1"
               value={settings.T}
-              onChange={setNumber("T", { min: 0.1, max: 5 })}
+              onChange={setNumber("T", { min: 0.1, max: 5, allowEmpty: true })}
               className="w-24 h-[26px] bg-transparent border border-border px-2 text-fg"
             />
           </Row>
