@@ -26,7 +26,8 @@ function resolveRandomSeed(input) {
 function resolveTemperature(input) {
   if (input === "" || input === null || input === undefined) return null;
   const n = Number(input);
-  return Number.isFinite(n) ? n : null;
+  if (!Number.isFinite(n)) return null;
+  return n > 0 ? n : null;
 }
 
 function resolveTopK(input) {
