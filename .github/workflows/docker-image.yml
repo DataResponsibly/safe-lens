@@ -2,10 +2,12 @@ name: Docker Image
 
 on:
   push:
-    branches: [ "main"]
-    paths-ignore:
-      - 'README.md'
-      - '**/*.md'
+    branches: ["main"]
+    paths:
+      - "api/**"
+      - "client/**"
+      - "Dockerfile.backend"
+      - "Dockerfile.frontend"
   workflow_dispatch:
 
 env:
@@ -13,49 +15,94 @@ env:
   IMAGE_NAME_BACKEND: safe-lens-backend
 
 jobs:
-  build:
+  changes:
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
 
     steps:
       - uses: actions/checkout@v4
-      - name: Build image
-        run: |
-          echo IMAGE_NAME_FRONTEND=$IMAGE_NAME_FRONTEND
-          echo IMAGE_NAME_BACKEND=$IMAGE_NAME_BACKEND
-          docker build . --file Dockerfile.frontend --tag $IMAGE_NAME_FRONTEND
-          docker build . --file Dockerfile.backend --tag $IMAGE_NAME_BACKEND
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - "api/**"
+              - "Dockerfile.backend"
+            frontend:
+              - "client/**"
+              - "Dockerfile.frontend"
 
+  build-backend:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend == 'true' }}
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: |
+          echo IMAGE_NAME_BACKEND=$IMAGE_NAME_BACKEND
+          docker build . --file Dockerfile.backend --tag $IMAGE_NAME_BACKEND
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Push image
+      - name: Push backend image
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME_BACKEND
+
+          # Change all uppercase characters to lowercase.
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+          # Strip the git ref prefix from the version.
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+          # Strip the "v" prefix from the tag name.
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+          # Uses the Docker `latest` tag convention.
+          [ "$VERSION" == "main" ] && VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker tag $IMAGE_NAME_BACKEND $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.frontend == 'true' }}
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build frontend image
+        run: |
+          echo IMAGE_NAME_FRONTEND=$IMAGE_NAME_FRONTEND
+          docker build . --file Dockerfile.frontend --tag $IMAGE_NAME_FRONTEND
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push frontend image
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME_FRONTEND
 
           # Change all uppercase characters to lowercase.
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          
+
           # Strip the git ref prefix from the version.
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          
+
           # Strip the "v" prefix from the tag name.
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          
+
           # Uses the Docker `latest` tag convention.
           [ "$VERSION" == "main" ] && VERSION=latest
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
           docker tag $IMAGE_NAME_FRONTEND $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
-
-          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME_BACKEND
-          # Change all uppercase characters to lowercase.
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-          docker tag $IMAGE_NAME_BACKEND $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
-

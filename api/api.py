@@ -143,7 +143,7 @@ async def generate(
             max_tokens=max_new_tokens,
             verbose=verbose,
         )
-        return StreamingResponse(data, media_type="application/json")
+        return StreamingResponse(data, media_type="application/json") 
 
 
 def edit(
