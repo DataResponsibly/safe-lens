@@ -17,9 +17,9 @@ from . import (
 )
 
 from .safenudge import SafeNudge
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
 from .wildguard_safenudge import WildGuard, WildGuardSafeNudge
-from .qwenqguard_safenudge import Qwen3GuardStream, Qwen3GuardSafeNudge
+from .qwenqguard_safenudge import Qwen3GuardSafeNudge
 
 CUDA = torch.cuda.is_available()
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
@@ -53,10 +53,18 @@ async def lifespan(app: FastAPI):
     ml_models["model"], ml_models["tokenizer"] = load_model(
         MODEL_NAME, token=TOKEN, cuda=CUDA, torch_dtype=torch.float16
     )
-    ml_models["QWEN_GUARD"] = Qwen3GuardStream(
-        model_path=QWEN_GUARD_MODEL_NAME,
-        torch_dtype=torch.bfloat16 if CUDA else torch.float32,
+    ml_models["QWEN_GUARD_TOKENIZER"] = AutoTokenizer.from_pretrained(
+        QWEN_GUARD_MODEL_NAME,
+        token=TOKEN,
+        trust_remote_code=True,
     )
+    ml_models["QWEN_GUARD_MODEL"] = AutoModel.from_pretrained(
+        QWEN_GUARD_MODEL_NAME,
+        token=TOKEN,
+        device_map="auto",
+        torch_dtype=torch.bfloat16 if CUDA else torch.float32,
+        trust_remote_code=True,
+    ).eval()
     yield
     # Clean up the ML models and release the resources
     ml_models.clear()
@@ -128,7 +136,8 @@ async def generate(
             cuda=CUDA,
         ).generate_moderated(
             prompt=init_prompt,
-            guard=ml_models["QWEN_GUARD"],
+            guard_model=ml_models["QWEN_GUARD_MODEL"],
+            guard_tokenizer=ml_models["QWEN_GUARD_TOKENIZER"],
             target="",
             tau=tau,
             max_tokens=max_new_tokens,
