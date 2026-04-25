@@ -24,6 +24,9 @@ from .qwenqguard_safenudge import Qwen3GuardSafeNudge
 CUDA = torch.cuda.is_available()
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
 QWEN_GUARD_MODEL_NAME = "Qwen/Qwen3Guard-Stream-0.6B"
+QWEN_GUARD_REVISION = os.getenv(
+    "QWEN_GUARD_REVISION", "419364a715de9840d47b1457982f64ff37f90ed4"
+)
 
 if "HF_TOKEN" in os.environ:
     TOKEN = os.environ["HF_TOKEN"]
@@ -55,11 +58,13 @@ async def lifespan(app: FastAPI):
     )
     ml_models["QWEN_GUARD_TOKENIZER"] = AutoTokenizer.from_pretrained(
         QWEN_GUARD_MODEL_NAME,
+        revision=QWEN_GUARD_REVISION,
         token=TOKEN,
         trust_remote_code=True,
     )
     ml_models["QWEN_GUARD_MODEL"] = AutoModel.from_pretrained(
         QWEN_GUARD_MODEL_NAME,
+        revision=QWEN_GUARD_REVISION,
         token=TOKEN,
         device_map="auto",
         torch_dtype=torch.bfloat16 if CUDA else torch.float32,
