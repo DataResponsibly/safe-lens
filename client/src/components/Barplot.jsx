@@ -83,7 +83,11 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("fill", "none");
 
     const yAxis = svg.append("g").call(d3.axisLeft(yScale));
-    yAxis.selectAll("text").attr("fill", "#f5f6fa");
+    yAxis
+      .selectAll("text")
+      .attr("fill", "#f5f6fa")
+      .style("font-size", "13px")
+      .style("font-weight", "500");
 
     yAxis
       .selectAll(".tick")
@@ -121,6 +125,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("y", (d) => yScale(d.text) + yScale.bandwidth() / 2)
       .attr("dy", "0.35em")
       .attr("dx", "8px")
+      .style("font-size", "12px")
       .text((d) => (Number(d.prob) === 0 ? "<0.01" : d.prob))
       .attr("fill", "white");
   }, [data, size]);

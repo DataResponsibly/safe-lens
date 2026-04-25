@@ -58,7 +58,7 @@ export default function ChatOutput({
         </div>
       )}
       {(hasPrompt || hasTokens) && (
-        <div className="text-sm sm:text-base text-fg">
+        <div className="text-sm text-fg">
           <div className="text-[10px] uppercase tracking-wider text-fg/50 mb-1">
             Generation
           </div>
