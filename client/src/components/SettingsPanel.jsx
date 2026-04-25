@@ -19,7 +19,7 @@ export default function SettingsPanel({ settings, onChange }) {
   };
 
   return (
-    <div className="flex flex-col gap-4 text-sm">
+    <div className="flex flex-col gap-3 text-xs">
       <Row label="Display uncertainty">
         <input
           type="checkbox"
@@ -29,7 +29,7 @@ export default function SettingsPanel({ settings, onChange }) {
         />
       </Row>
 
-      <Row label="SafeNudge&trade;">
+      <Row label="SafeNudge">
         <input
           type="checkbox"
           className="toggle"

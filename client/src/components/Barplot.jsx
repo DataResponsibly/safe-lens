@@ -91,7 +91,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .on("click", function () {
         if (disabledRef.current) {
           alert(
-            "Token editing is not allowed while SafeNudge(TM) is activated."
+            "Token editing is not allowed while SafeNudge is activated."
           );
           return;
         }

@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = {
   randomSeed: "",
   sleepTime: 0,
   maxNewTokens: 300,
-  k: 20,
+  k: 10,
   T: 1.3,
 };
 
@@ -32,7 +32,7 @@ export default function App() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [chartDrawerOpen, setChartDrawerOpen] = useState(false);
-  const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const abortRef = useRef(null);
 
@@ -122,7 +122,7 @@ export default function App() {
     (newToken) => {
       if (isStreaming) return;
       if (settings.safenudge) {
-        alert("Token editing is not allowed while SafeNudge(TM) is activated.");
+        alert("Token editing is not allowed while SafeNudge is activated.");
         return;
       }
       if (selectedIdx === null) return;
@@ -193,6 +193,14 @@ export default function App() {
           </button>
           <button
             type="button"
+            className="hidden md:inline-flex items-center border border-border px-3 min-h-[36px] uppercase text-xs tracking-wider hover:bg-panel active:bg-panel touch-manipulation"
+            onClick={() => setSettingsOpen(true)}
+            title="Open settings"
+          >
+            Settings
+          </button>
+          <button
+            type="button"
             className="md:hidden border border-border px-3 min-h-[36px] uppercase text-xs tracking-wider hover:bg-panel active:bg-panel touch-manipulation"
             onClick={() => setChartDrawerOpen(true)}
             title="Show probabilities"
@@ -202,7 +210,7 @@ export default function App() {
           <button
             type="button"
             className="md:hidden border border-border px-3 min-h-[36px] uppercase text-xs tracking-wider hover:bg-panel active:bg-panel touch-manipulation"
-            onClick={() => setSettingsDrawerOpen(true)}
+            onClick={() => setSettingsOpen(true)}
           >
             Settings
           </button>
@@ -229,10 +237,8 @@ export default function App() {
           />
         </section>
 
-        <aside className="hidden md:flex md:w-[380px] lg:w-[440px] xl:w-[500px] flex-col min-h-0">
-          <DesktopRightPanel
-            settings={settings}
-            onChange={handleSettingsChange}
+        <aside className="hidden md:flex md:w-[360px] lg:w-[400px] xl:w-[440px] flex-col min-h-0 shrink-0">
+          <DesktopBarplotPanel
             barplotData={barplotData}
             safenudgeActive={settings.safenudge}
             onTokenEdit={handleTokenEdit}
@@ -255,12 +261,12 @@ export default function App() {
         </MobileDrawer>
       )}
 
-      {settingsDrawerOpen && (
+      {settingsOpen && (
         <MobileDrawer
           title="Settings"
-          onClose={() => setSettingsDrawerOpen(false)}
+          onClose={() => setSettingsOpen(false)}
         >
-          <div className="flex-1 min-h-0 p-3 overflow-y-auto overscroll-contain">
+          <div className="flex-1 min-h-0 p-3 overflow-y-auto overscroll-contain text-xs">
             <SettingsPanel
               settings={settings}
               onChange={handleSettingsChange}
@@ -268,6 +274,43 @@ export default function App() {
           </div>
         </MobileDrawer>
       )}
+
+      {settingsOpen && (
+        <DesktopSettingsDrawer onClose={() => setSettingsOpen(false)}>
+          <SettingsPanel settings={settings} onChange={handleSettingsChange} />
+        </DesktopSettingsDrawer>
+      )}
+    </div>
+  );
+}
+
+function DesktopSettingsDrawer({ onClose, children }) {
+  return (
+    <div className="hidden md:flex fixed inset-0 z-40">
+      <div className="flex-1 bg-black/60" onClick={onClose} aria-hidden="true" />
+      <div
+        className="w-full max-w-sm bg-bg border-l border-border flex flex-col min-h-0 shadow-2xl"
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
+          <span className="uppercase tracking-wider text-xs text-fg/80">
+            Settings
+          </span>
+          <button
+            type="button"
+            className="border border-border px-3 min-h-[36px] text-xs uppercase tracking-wider touch-manipulation"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 p-3 overflow-y-auto overscroll-contain text-xs">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
@@ -299,47 +342,14 @@ function MobileDrawer({ title, onClose, children }) {
   );
 }
 
-function DesktopRightPanel({
-  settings,
-  onChange,
-  barplotData,
-  safenudgeActive,
-  onTokenEdit,
-}) {
-  const [settingsOpen, setSettingsOpen] = useState(true);
-
+function DesktopBarplotPanel({ barplotData, safenudgeActive, onTokenEdit }) {
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex-1 min-h-[260px] border-b border-border p-3 overflow-hidden">
-        <Barplot
-          data={barplotData}
-          onTickClick={onTokenEdit}
-          disabled={safenudgeActive}
-        />
-      </div>
-      <div
-        className={
-          "shrink-0 flex flex-col min-h-0 " +
-          (settingsOpen ? "max-h-[55%]" : "")
-        }
-      >
-        <button
-          type="button"
-          onClick={() => setSettingsOpen((v) => !v)}
-          aria-expanded={settingsOpen}
-          className="flex items-center justify-between w-full px-3 py-2 border-t border-border text-xs uppercase tracking-wider hover:bg-panel touch-manipulation"
-        >
-          <span>Settings</span>
-          <span aria-hidden="true" className="text-fg/70">
-            {settingsOpen ? "\u25BE" : "\u25B8"}
-          </span>
-        </button>
-        {settingsOpen && (
-          <div className="flex-1 min-h-0 p-3 overflow-y-auto overscroll-contain">
-            <SettingsPanel settings={settings} onChange={onChange} />
-          </div>
-        )}
-      </div>
+    <div className="flex flex-col h-full min-h-0 p-3 overflow-hidden">
+      <Barplot
+        data={barplotData}
+        onTickClick={onTokenEdit}
+        disabled={safenudgeActive}
+      />
     </div>
   );
 }

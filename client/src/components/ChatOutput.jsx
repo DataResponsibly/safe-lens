@@ -33,7 +33,7 @@ export default function ChatOutput({
 
   const handleClick = (token) => {
     if (safenudgeActive) {
-      alert("Probability viewing is not allowed while SafeNudge(TM) is activated.");
+      alert("Probability viewing is not allowed while SafeNudge is activated.");
       return;
     }
     onSelectToken(token.idx_counter);
@@ -48,32 +48,37 @@ export default function ChatOutput({
       className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 leading-6 break-words"
     >
       {hasPrompt && (
-        <div className="mb-4 select-text">
+        <div className="mb-3 select-text">
           <div className="text-[10px] uppercase tracking-wider text-fg/50 mb-1">
             Prompt
           </div>
-          <div className="border-l-2 border-fg/30 pl-3 whitespace-pre-wrap break-words text-fg/80">
+          <div className="border-l-2 border-fg/30 pl-3 whitespace-pre-wrap break-words text-sm text-fg/80">
             {prompt}
           </div>
         </div>
       )}
       {(hasPrompt || hasTokens) && (
-        <span className="text-fg/60 mr-1">&gt;</span>
+        <div className="text-sm sm:text-base text-fg">
+          <div className="text-[10px] uppercase tracking-wider text-fg/50 mb-1">
+            Generation
+          </div>
+          <span className="text-fg/60 mr-1">&gt;</span>
+          {tokens.map((token, i) => {
+            const selected = token.idx_counter === selectedIdx;
+            const bg = showUncertainty ? uncertaintyBg(token) : "transparent";
+            return (
+              <span
+                key={`${token.idx_counter}-${i}`}
+                className={"token" + (selected ? " token-selected" : "")}
+                style={{ backgroundColor: bg }}
+                onClick={() => handleClick(token)}
+              >
+                {token.selected_text}
+              </span>
+            );
+          })}
+        </div>
       )}
-      {tokens.map((token, i) => {
-        const selected = token.idx_counter === selectedIdx;
-        const bg = showUncertainty ? uncertaintyBg(token) : "transparent";
-        return (
-          <span
-            key={`${token.idx_counter}-${i}`}
-            className={"token" + (selected ? " token-selected" : "")}
-            style={{ backgroundColor: bg }}
-            onClick={() => handleClick(token)}
-          >
-            {token.selected_text}
-          </span>
-        );
-      })}
       {errorMessage && (
         <div className="mt-4 text-danger text-sm">{errorMessage}</div>
       )}
