@@ -88,15 +88,12 @@ def generate_output_stream(
                 outputs = model(
                     all_ids,
                     use_cache=False,
-                    output_hidden_states=True,
+                    output_hidden_states=False,
                     output_attentions=False,
                 )
-                logits = outputs["logits"]
+                logits = outputs["logits"][0, -1, :].clone().float().cpu()
                 del outputs
                 del all_ids
-
-            logits = logits.cpu()
-            logits = logits[-1, -1]
 
             logits_topk, logits_topk_idx = torch.topk(logits, k)
 
