@@ -77,11 +77,11 @@ def generate_output_stream(
             :-1
         ].reshape(1, -1)
 
-        while not (output.find(TERMINATOR) >= 0 or output_ids.shape[-1] >= max_new_tokens):
+        if cuda:
+            prompt_ids = prompt_ids.cuda()
+            output_ids = output_ids.cuda()
 
-            if cuda:
-                prompt_ids = prompt_ids.cuda()
-                output_ids = output_ids.cuda()
+        while not (output.find(TERMINATOR) >= 0 or output_ids.shape[-1] >= max_new_tokens):
 
             with torch.no_grad():
                 all_ids = torch.cat([prompt_ids, output_ids], dim=-1)
@@ -92,6 +92,8 @@ def generate_output_stream(
                     output_attentions=False,
                 )
                 logits = outputs["logits"]
+                del outputs
+                del all_ids
 
             logits = logits.cpu()
             logits = logits[-1, -1]
@@ -117,9 +119,14 @@ def generate_output_stream(
             data.loc[len(data)] = d
 
             output += texts_topk[next_idx]
-            output_ids = torch.cat(
-                [output_ids.cpu(), logits_topk_idx[next_idx].reshape(1, -1)], dim=-1
-            )
+            next_id = logits_topk_idx[next_idx].reshape(1, -1)
+            if cuda:
+                next_id = next_id.cuda()
+            output_ids = torch.cat([output_ids, next_id], dim=-1)
+
+            del logits
+            del logits_topk
+            del logits_topk_idx
 
             if verbose:
                 print(texts_topk[next_idx], end="", flush=True)
