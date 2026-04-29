@@ -3,6 +3,7 @@ import json
 import torch
 
 from .safenudge import ModelWrapper
+from ._output_handler import clear_cuda_memory
 
 
 class Qwen3GuardSafeNudge(ModelWrapper):
@@ -210,6 +211,8 @@ class Qwen3GuardSafeNudge(ModelWrapper):
                         }
                     ) + "\n"
         finally:
+            del input_ids
             if stream_state is not None:
                 guard_model.close_stream(stream_state)
+            clear_cuda_memory()
 

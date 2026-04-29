@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import torch
+from ._output_handler import clear_cuda_memory
 
 
 class ModelWrapper(object):
@@ -150,74 +151,78 @@ class SafeNudge(ModelWrapper):
         input_ids = self._get_ids(input)
         sentence = target
 
-        if verbose:
-            print(sentence, end="")
+        try:
+            if verbose:
+                print(sentence, end="")
 
-        j = 0
-        while True:
-            logits_top, logits_top_idx, last_hidden_state = (
-                self.get_top_logits_from_ids(input_ids)
-            )
-            probs_top = torch.nn.functional.softmax(
-                logits_top / self.temperature, dim=-1
-            )
-            next_token = logits_top_idx[
-                self._rng.choice(len(logits_top_idx), p=probs_top.detach().numpy())
-            ]
-
-            j += 1
-            if (next_token.item() == self.tokenizer.eos_token_id) or (j > max_tokens):
-                _, last_hidden_state = self._forward_pass_from_ids(input_ids)
-                if verbose:
-                    print("\n")
-                return sentence, last_hidden_state, nudged
-
-            if self.tokenizer.name_or_path.find("mistral") > -1:
-                next_token_str = self.tokenizer.convert_ids_to_tokens(
-                    next_token.item()
-                ).replace("▁", " ")
-            else:
-                next_token_str = self.tokenizer.decode(next_token.item())
-
-            # Check if next token would be dangerous
-            if (
-                (j >= 5)
-                and (not nudged)
-                and (
-                    clf.predict_proba(last_hidden_state.numpy().reshape(1, -1))[:, 1]
-                    >= tau
+            j = 0
+            while True:
+                logits_top, logits_top_idx, last_hidden_state = (
+                    self.get_top_logits_from_ids(input_ids)
                 )
-            ):
-                nudge_ids = self.tokenizer(SafeNudge.NUDGE + sentence)["input_ids"][1:]
-                # sentence is not modified
-                input_ids = torch.cat(
-                    (input_ids, torch.tensor(nudge_ids).reshape(1, -1)), dim=1
+                probs_top = torch.nn.functional.softmax(
+                    logits_top / self.temperature, dim=-1
                 )
-                if verbose:
-                    print("|||", end="")
-                nudged = True
-                yield json.dumps(
-                    {
-                        "idx_counter": -1,
-                        "texts": [],
-                        "token_ids": [],
-                        "probs": [],
-                        "selected_idx": -1,
-                        "selected_text": "[NUDGE]",
-                    }
-                ) + "\n"
-            else:
-                sentence += next_token_str
-                input_ids = torch.cat((input_ids, next_token.reshape(1, 1)), dim=1)
-                if verbose:
-                    print(next_token_str, end="")
-                yield json.dumps(
-                    {
-                        "idx_counter": -1,
-                        "texts": [],
-                        "token_ids": [],
-                        "probs": [],
-                        "selected_idx": -1,
-                        "selected_text": next_token_str,
-                    }
-                ) + "\n"
+                next_token = logits_top_idx[
+                    self._rng.choice(len(logits_top_idx), p=probs_top.detach().numpy())
+                ]
+
+                j += 1
+                if (next_token.item() == self.tokenizer.eos_token_id) or (j > max_tokens):
+                    _, last_hidden_state = self._forward_pass_from_ids(input_ids)
+                    if verbose:
+                        print("\n")
+                    return sentence, last_hidden_state, nudged
+
+                if self.tokenizer.name_or_path.find("mistral") > -1:
+                    next_token_str = self.tokenizer.convert_ids_to_tokens(
+                        next_token.item()
+                    ).replace("▁", " ")
+                else:
+                    next_token_str = self.tokenizer.decode(next_token.item())
+
+                # Check if next token would be dangerous
+                if (
+                    (j >= 5)
+                    and (not nudged)
+                    and (
+                        clf.predict_proba(last_hidden_state.numpy().reshape(1, -1))[:, 1]
+                        >= tau
+                    )
+                ):
+                    nudge_ids = self.tokenizer(SafeNudge.NUDGE + sentence)["input_ids"][1:]
+                    # sentence is not modified
+                    input_ids = torch.cat(
+                        (input_ids, torch.tensor(nudge_ids).reshape(1, -1)), dim=1
+                    )
+                    if verbose:
+                        print("|||", end="")
+                    nudged = True
+                    yield json.dumps(
+                        {
+                            "idx_counter": -1,
+                            "texts": [],
+                            "token_ids": [],
+                            "probs": [],
+                            "selected_idx": -1,
+                            "selected_text": "[NUDGE]",
+                        }
+                    ) + "\n"
+                else:
+                    sentence += next_token_str
+                    input_ids = torch.cat((input_ids, next_token.reshape(1, 1)), dim=1)
+                    if verbose:
+                        print(next_token_str, end="")
+                    yield json.dumps(
+                        {
+                            "idx_counter": -1,
+                            "texts": [],
+                            "token_ids": [],
+                            "probs": [],
+                            "selected_idx": -1,
+                            "selected_text": next_token_str,
+                        }
+                    ) + "\n"
+        finally:
+            del input_ids
+            clear_cuda_memory()

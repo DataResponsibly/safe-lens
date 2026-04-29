@@ -5,6 +5,14 @@ from time import sleep
 import pandas as pd
 import numpy as np
 import torch
+import gc
+
+
+def clear_cuda_memory():
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+        torch.cuda.empty_cache()
+    gc.collect()
 
 
 def generate_output_stream(
@@ -21,112 +29,114 @@ def generate_output_stream(
     random_state=None,
     as_json=True,
 ):
-
     rng = np.random.default_rng(random_state)
     TERMINATOR = tokenizer.eos_token
     idx_counter = 0
+    prompt_ids = None
+    output_ids = None
 
-    if data is None:
-        data = pd.DataFrame(
-            columns=[
-                "idx_counter",
-                "texts",
-                "token_ids",
-                "probs",
-                "selected_idx",
-                "selected_text",
-            ]
-        )
-
-        output = ""
-        output_ids = torch.tensor([], dtype=torch.long)
-
-    else:
-        output = data["selected_text"].str.cat(sep="")
-        output_ids = torch.tensor(
-            data.apply(
-                lambda row: row["token_ids"][row["selected_idx"]], axis=1
-            ).tolist()
-        ).reshape(1, -1)
-
-        previous_content = json.loads(data.to_json(orient="records"))
-        for d in previous_content:
-            if as_json:
-                d = json.dumps(d) + "\n"
-            yield d
-            idx_counter += 1
-
-    if verbose:
-        print(init_prompt)
-        print(output, end="", flush=True)
-
-    prompt = [
-        {"role": "user", "content": init_prompt},
-        {"role": "assistant", "content": ""},
-    ]
-    prompt_ids = tokenizer.apply_chat_template(prompt, return_tensors="pt")[0][
-        :-1
-    ].reshape(1, -1)
-
-    while not (output.find(TERMINATOR) >= 0 or output_ids.shape[-1] >= max_new_tokens):
-
-        if cuda:
-            prompt_ids = prompt_ids.cuda()
-            output_ids = output_ids.cuda()
-
-        with torch.no_grad():
-            all_ids = torch.cat([prompt_ids, output_ids], dim=-1)
-            outputs = model(
-                all_ids,
-                use_cache=False,
-                output_hidden_states=True,
-                output_attentions=False,
+    try:
+        if data is None:
+            data = pd.DataFrame(
+                columns=[
+                    "idx_counter",
+                    "texts",
+                    "token_ids",
+                    "probs",
+                    "selected_idx",
+                    "selected_text",
+                ]
             )
-            logits = outputs["logits"]
 
-        # prompt_ids = prompt_ids.cpu()
-        logits = logits.cpu()
-        logits = logits[-1, -1]
+            output = ""
+            output_ids = torch.tensor([], dtype=torch.long)
 
-        logits_topk, logits_topk_idx = torch.topk(logits, k)
+        else:
+            output = data["selected_text"].str.cat(sep="")
+            output_ids = torch.tensor(
+                data.apply(
+                    lambda row: row["token_ids"][row["selected_idx"]], axis=1
+                ).tolist()
+            ).reshape(1, -1)
 
-        texts_topk = [tokenizer.decode(idx) for idx in logits_topk_idx]
-        probs_topk = torch.nn.functional.softmax(logits_topk / T, dim=-1)
-        probs_topk = probs_topk.detach().numpy()
-
-        next_idx = rng.choice(len(texts_topk), p=probs_topk)
-
-        d = {
-            "idx_counter": idx_counter,
-            "texts": texts_topk,
-            "token_ids": logits_topk_idx.tolist(),
-            "probs": probs_topk.tolist(),
-            "selected_idx": next_idx,
-            "selected_text": texts_topk[next_idx],
-        }
-        idx_counter += 1
-
-        data.loc[len(data)] = d
-
-        output += texts_topk[next_idx]
-        output_ids = torch.cat(
-            [output_ids.cpu(), logits_topk_idx[next_idx].reshape(1, -1)], dim=-1
-        )
+            previous_content = json.loads(data.to_json(orient="records"))
+            for d in previous_content:
+                if as_json:
+                    d = json.dumps(d) + "\n"
+                yield d
+                idx_counter += 1
 
         if verbose:
-            print(texts_topk[next_idx], end="", flush=True)
+            print(init_prompt)
+            print(output, end="", flush=True)
 
-        if as_json:
-            d = json.dumps(d) + "\n"
+        prompt = [
+            {"role": "user", "content": init_prompt},
+            {"role": "assistant", "content": ""},
+        ]
+        prompt_ids = tokenizer.apply_chat_template(prompt, return_tensors="pt")[0][
+            :-1
+        ].reshape(1, -1)
 
-        yield d
-        sleep(sleep_time)
+        while not (output.find(TERMINATOR) >= 0 or output_ids.shape[-1] >= max_new_tokens):
 
-    if cuda:
+            if cuda:
+                prompt_ids = prompt_ids.cuda()
+                output_ids = output_ids.cuda()
+
+            with torch.no_grad():
+                all_ids = torch.cat([prompt_ids, output_ids], dim=-1)
+                outputs = model(
+                    all_ids,
+                    use_cache=False,
+                    output_hidden_states=True,
+                    output_attentions=False,
+                )
+                logits = outputs["logits"]
+
+            logits = logits.cpu()
+            logits = logits[-1, -1]
+
+            logits_topk, logits_topk_idx = torch.topk(logits, k)
+
+            texts_topk = [tokenizer.decode(idx) for idx in logits_topk_idx]
+            probs_topk = torch.nn.functional.softmax(logits_topk / T, dim=-1)
+            probs_topk = probs_topk.detach().numpy()
+
+            next_idx = rng.choice(len(texts_topk), p=probs_topk)
+
+            d = {
+                "idx_counter": idx_counter,
+                "texts": texts_topk,
+                "token_ids": logits_topk_idx.tolist(),
+                "probs": probs_topk.tolist(),
+                "selected_idx": next_idx,
+                "selected_text": texts_topk[next_idx],
+            }
+            idx_counter += 1
+
+            data.loc[len(data)] = d
+
+            output += texts_topk[next_idx]
+            output_ids = torch.cat(
+                [output_ids.cpu(), logits_topk_idx[next_idx].reshape(1, -1)], dim=-1
+            )
+
+            if verbose:
+                print(texts_topk[next_idx], end="", flush=True)
+
+            if as_json:
+                d = json.dumps(d) + "\n"
+
+            yield d
+            sleep(sleep_time)
+
+        if verbose:
+            print()
+    finally:
         del prompt_ids
-
-    if verbose:
-        print()
+        del output_ids
+        clear_cuda_memory()
 
 
 def generate_output(
