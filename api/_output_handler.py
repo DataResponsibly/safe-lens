@@ -10,7 +10,6 @@ import gc
 
 def clear_cuda_memory():
     if torch.cuda.is_available():
-        torch.cuda.synchronize()
         torch.cuda.empty_cache()
     gc.collect()
 
