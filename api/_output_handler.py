@@ -1,7 +1,6 @@
 import json
 import re
 import ast
-import asyncio
 from time import sleep
 import pandas as pd
 import numpy as np
@@ -15,7 +14,7 @@ def clear_cuda_memory():
     gc.collect()
 
 
-async def generate_output_stream(
+def generate_output_stream(
     init_prompt,
     model,
     tokenizer,
@@ -84,17 +83,14 @@ async def generate_output_stream(
 
         while not (output.find(TERMINATOR) >= 0 or output_ids.shape[-1] >= max_new_tokens):
 
-            def _forward():
-                return model(
+            with torch.no_grad():
+                all_ids = torch.cat([prompt_ids, output_ids], dim=-1)
+                outputs = model(
                     all_ids,
                     use_cache=False,
                     output_hidden_states=False,
                     output_attentions=False,
                 )
-
-            with torch.no_grad():
-                all_ids = torch.cat([prompt_ids, output_ids], dim=-1)
-                outputs = await asyncio.to_thread(_forward)
                 logits = outputs["logits"][0, -1, :].clone().float().cpu()
                 del outputs
                 del all_ids
@@ -136,7 +132,7 @@ async def generate_output_stream(
                 d = json.dumps(d) + "\n"
 
             yield d
-            await asyncio.sleep(sleep_time)
+            sleep(sleep_time)
 
         if verbose:
             print()
@@ -146,7 +142,7 @@ async def generate_output_stream(
         clear_cuda_memory()
 
 
-async def generate_output(
+def generate_output(
     init_prompt,
     model,
     tokenizer,
@@ -158,7 +154,7 @@ async def generate_output(
     verbose=True,
     random_state=None,
 ):
-    stream = generate_output_stream(
+    data = generate_output_stream(
         init_prompt,
         model,
         tokenizer,
@@ -171,7 +167,6 @@ async def generate_output(
         random_state=random_state,
         as_json=False,
     )
-    data = [d async for d in stream]
     return pd.DataFrame(data)
 
 

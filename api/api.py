@@ -1,6 +1,5 @@
 import os
 import json
-import asyncio
 
 from dotenv import dotenv_values
 import pandas as pd
@@ -33,9 +32,6 @@ if "HF_TOKEN" in os.environ:
     TOKEN = os.environ["HF_TOKEN"]
 else:
     TOKEN = dotenv_values()["HF_TOKEN"]
-
-MAX_CONCURRENT_REQUESTS = 4
-semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
 
 ml_models = {}
 
@@ -119,56 +115,40 @@ async def generate(
     Generate an output stream based on a prompt, using a LLM (Llama 3.2 1B Instruct).
     """
     print(safenudge)
-
-    async def _safe_generate():
-        async with semaphore:
-            stream = generate_output_stream(
-                init_prompt=init_prompt,
-                model=ml_models["model"],
-                tokenizer=ml_models["tokenizer"],
-                k=k,
-                T=T,
-                max_new_tokens=max_new_tokens,
-                sleep_time=sleep_time,
-                cuda=CUDA,
-                verbose=verbose,
-                random_state=random_state,
-                data=data,
-            )
-            async for chunk in stream:
-                yield chunk
-
-    async def _safe_moderated_generate():
-        async with semaphore:
-            generator = Qwen3GuardSafeNudge(
-                model=ml_models["model"],
-                tokenizer=ml_models["tokenizer"],
-                mode="topk",
-                k=k,
-                temperature=T,
-                random_state=random_state,
-                cuda=CUDA,
-            ).generate_moderated(
-                prompt=init_prompt,
-                guard_model=ml_models["QWEN_GUARD_MODEL"],
-                guard_tokenizer=ml_models["QWEN_GUARD_TOKENIZER"],
-                target="",
-                tau=tau,
-                max_tokens=max_new_tokens,
-                verbose=verbose,
-            )
-            # Run generator steps in a thread to unblock the event loop
-            while True:
-                try:
-                    chunk = await asyncio.to_thread(next, generator)
-                    yield chunk
-                except StopIteration:
-                    break
-
     if not safenudge:
-        return StreamingResponse(_safe_generate(), media_type="application/json")
+        data = generate_output_stream(
+            init_prompt=init_prompt,
+            model=ml_models["model"],
+            tokenizer=ml_models["tokenizer"],
+            k=k,
+            T=T,
+            max_new_tokens=max_new_tokens,
+            sleep_time=sleep_time,
+            cuda=CUDA,
+            verbose=verbose,
+            random_state=random_state,
+            data=data,
+        )
+        return StreamingResponse(data, media_type="application/json")
     else:
-        return StreamingResponse(_safe_moderated_generate(), media_type="application/json") 
+        data = Qwen3GuardSafeNudge(
+            model=ml_models["model"],
+            tokenizer=ml_models["tokenizer"],
+            mode="topk",
+            k=k,
+            temperature=T,
+            random_state=random_state,
+            cuda=CUDA,
+        ).generate_moderated(
+            prompt=init_prompt,
+            guard_model=ml_models["QWEN_GUARD_MODEL"],
+            guard_tokenizer=ml_models["QWEN_GUARD_TOKENIZER"],
+            target="",
+            tau=tau,
+            max_tokens=max_new_tokens,
+            verbose=verbose,
+        )
+        return StreamingResponse(data, media_type="application/json") 
 
 
 def edit(
@@ -206,25 +186,18 @@ async def regenerate(
         new_token_idx = content[token_pos]["texts"].index(new_token)
         content = json.dumps(content)
         data = edit(content, token_pos, new_token_idx)
-    else:
-        data = None
 
-    async def _safe_regenerate():
-        async with semaphore:
-            stream = generate_output_stream(
-                init_prompt=init_prompt,
-                model=ml_models["model"],
-                tokenizer=ml_models["tokenizer"],
-                k=k,
-                T=T,
-                max_new_tokens=max_new_tokens,
-                sleep_time=sleep_time,
-                cuda=CUDA,
-                verbose=verbose,
-                random_state=random_state,
-                data=data,
-            )
-            async for chunk in stream:
-                yield chunk
-
-    return StreamingResponse(_safe_regenerate(), media_type="application/json")
+    result = generate_output_stream(
+        init_prompt=init_prompt,
+        model=ml_models["model"],
+        tokenizer=ml_models["tokenizer"],
+        k=k,
+        T=T,
+        max_new_tokens=max_new_tokens,
+        sleep_time=sleep_time,
+        cuda=CUDA,
+        verbose=verbose,
+        random_state=random_state,
+        data=data,
+    )
+    return StreamingResponse(result, media_type="application/json")
