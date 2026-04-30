@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
+
 
 def load_model(
     model_path: str = "mistralai/Mistral-7B-Instruct-v0.3",
@@ -20,6 +20,5 @@ def load_model(
 
     if cuda:
         model.to("cuda")
-        model = torch.compile(model)
 
     return model, tokenizer
