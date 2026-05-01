@@ -20,6 +20,7 @@ from .safenudge import SafeNudge
 from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
 from .wildguard_safenudge import WildGuard, WildGuardSafeNudge
 from .qwenqguard_safenudge import Qwen3GuardSafeNudge
+import pickle
 
 CUDA = torch.cuda.is_available()
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
@@ -56,20 +57,21 @@ async def lifespan(app: FastAPI):
     ml_models["model"], ml_models["tokenizer"] = load_model(
         MODEL_NAME, token=TOKEN, cuda=CUDA, torch_dtype=torch.float16
     )
-    ml_models["QWEN_GUARD_TOKENIZER"] = AutoTokenizer.from_pretrained(
-        QWEN_GUARD_MODEL_NAME,
-        revision=QWEN_GUARD_REVISION,
-        token=TOKEN,
-        trust_remote_code=True,
-    )
-    ml_models["QWEN_GUARD_MODEL"] = AutoModel.from_pretrained(
-        QWEN_GUARD_MODEL_NAME,
-        revision=QWEN_GUARD_REVISION,
-        token=TOKEN,
-        device_map="auto",
-        torch_dtype=torch.bfloat16 if CUDA else torch.float32,
-        trust_remote_code=True,
-    ).eval()
+    ml_models['SAFENUDGE_MODEL'] = pickle.load(open("artifacts/clf_mlp_llama_1b.pkl", "rb"))
+    # ml_models["QWEN_GUARD_TOKENIZER"] = AutoTokenizer.from_pretrained(
+    #     QWEN_GUARD_MODEL_NAME,
+    #     revision=QWEN_GUARD_REVISION,
+    #     token=TOKEN,
+    #     trust_remote_code=True,
+    # )
+    # ml_models["QWEN_GUARD_MODEL"] = AutoModel.from_pretrained(
+    #     QWEN_GUARD_MODEL_NAME,
+    #     revision=QWEN_GUARD_REVISION,
+    #     token=TOKEN,
+    #     device_map="auto",
+    #     torch_dtype=torch.bfloat16 if CUDA else torch.float32,
+    #     trust_remote_code=True,
+    # ).eval()
     yield
     # Clean up the ML models and release the resources
     ml_models.clear()
@@ -131,7 +133,7 @@ async def generate(
         )
         return StreamingResponse(data, media_type="application/json")
     else:
-        data = Qwen3GuardSafeNudge(
+        data = SafeNudge(
             model=ml_models["model"],
             tokenizer=ml_models["tokenizer"],
             mode="topk",
@@ -141,8 +143,7 @@ async def generate(
             cuda=CUDA,
         ).generate_moderated(
             prompt=init_prompt,
-            guard_model=ml_models["QWEN_GUARD_MODEL"],
-            guard_tokenizer=ml_models["QWEN_GUARD_TOKENIZER"],
+            clf=ml_models["SAFENUDGE_MODEL"],
             target="",
             tau=tau,
             max_tokens=max_new_tokens,
