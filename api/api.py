@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
     ml_models["model"], ml_models["tokenizer"] = load_model(
         MODEL_NAME, token=TOKEN, cuda=CUDA, torch_dtype=torch.float16
     )
-    ml_models['SAFENUDGE_MODEL'] = pickle.load(open("artifacts/clf_mlp_llama_1b.pkl", "rb"))
+    ml_models['SAFENUDGE_MODEL'] = pickle.load(open("api/artifacts/clf_mlp_llama_1b.pkl", "rb"))
     # ml_models["QWEN_GUARD_TOKENIZER"] = AutoTokenizer.from_pretrained(
     #     QWEN_GUARD_MODEL_NAME,
     #     revision=QWEN_GUARD_REVISION,
