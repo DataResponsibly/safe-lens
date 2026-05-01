@@ -85,6 +85,10 @@ class ModelWrapper(object):
                 print(next_token_str, end="")
 
             input_ids = torch.cat((input_ids, next_token.reshape(1, 1)), dim=1)
+            
+            del logits_top
+            del logits_top_idx
+            del probs_top
 
     def get_top_logits_from_ids(self, input_ids):
         logits, last_hidden_state = self._forward_pass_from_ids(input_ids)
@@ -198,6 +202,12 @@ class SafeNudge(ModelWrapper):
                     if verbose:
                         print("|||", end="")
                     nudged = True
+                    
+                    del logits_top
+                    del logits_top_idx
+                    del probs_top
+                    del last_hidden_state
+                    
                     yield json.dumps(
                         {
                             "idx_counter": -1,
@@ -213,6 +223,12 @@ class SafeNudge(ModelWrapper):
                     input_ids = torch.cat((input_ids, next_token.reshape(1, 1)), dim=1)
                     if verbose:
                         print(next_token_str, end="")
+                        
+                    del logits_top
+                    del logits_top_idx
+                    del probs_top
+                    del last_hidden_state
+                    
                     yield json.dumps(
                         {
                             "idx_counter": -1,
