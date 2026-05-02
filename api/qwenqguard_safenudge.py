@@ -188,6 +188,11 @@ class Qwen3GuardSafeNudge(ModelWrapper):
                         print("|||", end="")
 
                     nudged = True
+
+                    del logits_top
+                    del logits_top_idx
+                    del probs_top
+
                     yield json.dumps(
                         {
                             "idx_counter": -1,
@@ -207,6 +212,10 @@ class Qwen3GuardSafeNudge(ModelWrapper):
 
                     if verbose:
                         print(next_token_str, end="")
+
+                    del logits_top
+                    del logits_top_idx
+                    del probs_top
 
                     yield json.dumps(
                         {

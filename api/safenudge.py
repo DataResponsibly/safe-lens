@@ -64,45 +64,53 @@ class ModelWrapper(object):
         if self.cuda:
             input_ids = input_ids.to(device)
 
-        j = 0
-        while True:
+        try:
+            j = 0
+            while True:
 
-            logits_top, logits_top_idx, _ = self.get_top_logits_from_ids(
-                input_ids, need_hidden_states=False
-            )
-            probs_top = torch.nn.functional.softmax(
-                logits_top / self.temperature, dim=-1
-            )
-            next_token = logits_top_idx[
-                self._rng.choice(len(logits_top_idx), p=probs_top.detach().numpy())
-            ]
+                logits_top, logits_top_idx, _ = self.get_top_logits_from_ids(
+                    input_ids, need_hidden_states=False
+                )
+                probs_top = torch.nn.functional.softmax(
+                    logits_top / self.temperature, dim=-1
+                )
+                next_token = logits_top_idx[
+                    self._rng.choice(len(logits_top_idx), p=probs_top.detach().numpy())
+                ]
 
-            j += 1
-            if (next_token.item() == self.tokenizer.eos_token_id) or (j > max_tokens):
-                _, last_hidden_state = self._forward_pass_from_ids(input_ids)
+                j += 1
+                if (next_token.item() == self.tokenizer.eos_token_id) or (j > max_tokens):
+                    del logits_top, logits_top_idx, probs_top
+                    _, last_hidden_state = self._forward_pass_from_ids(input_ids)
+                    if verbose:
+                        print("\n")
+                    return sentence, last_hidden_state
+
+                if self.tokenizer.name_or_path.find("mistral") > -1:
+                    next_token_str = self.tokenizer.convert_ids_to_tokens(
+                        next_token.item()
+                    ).replace("▁", " ")
+                else:
+                    next_token_str = self.tokenizer.decode(next_token.item())
+
+                sentence += next_token_str
                 if verbose:
-                    print("\n")
-                return sentence, last_hidden_state
+                    print(next_token_str, end="")
 
-            if self.tokenizer.name_or_path.find("mistral") > -1:
-                next_token_str = self.tokenizer.convert_ids_to_tokens(
-                    next_token.item()
-                ).replace("▁", " ")
-            else:
-                next_token_str = self.tokenizer.decode(next_token.item())
+                next_piece = next_token.reshape(1, 1).to(
+                    device=device, dtype=input_ids.dtype
+                )
+                input_ids = torch.cat((input_ids, next_piece), dim=1)
 
-            sentence += next_token_str
-            if verbose:
-                print(next_token_str, end="")
-
-            next_piece = next_token.reshape(1, 1).to(
-                device=device, dtype=input_ids.dtype
-            )
-            input_ids = torch.cat((input_ids, next_piece), dim=1)
-            
-            del logits_top
-            del logits_top_idx
-            del probs_top
+                del logits_top
+                del logits_top_idx
+                del probs_top
+        finally:
+            try:
+                del input_ids
+            except NameError:
+                pass
+            clear_cuda_memory()
 
     def get_top_logits_from_ids(self, input_ids, need_hidden_states=True):
         logits, last_hidden_state = self._forward_pass_from_ids(
@@ -122,6 +130,7 @@ class ModelWrapper(object):
             # Need to implement
             return False
 
+        del logits
         return logits_top, logits_top_idx, last_hidden_state
 
     def _get_ids(self, input):
@@ -199,6 +208,9 @@ class SafeNudge(ModelWrapper):
 
                 j += 1
                 if (next_token.item() == self.tokenizer.eos_token_id) or (j > max_tokens):
+                    del logits_top, logits_top_idx, probs_top
+                    if last_hidden_state is not None:
+                        del last_hidden_state
                     if verbose:
                         print("\n")
                     return
@@ -270,5 +282,8 @@ class SafeNudge(ModelWrapper):
                         }
                     ) + "\n"
         finally:
-            del input_ids
+            try:
+                del input_ids
+            except NameError:
+                pass
             clear_cuda_memory()

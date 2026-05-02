@@ -9,9 +9,11 @@ import gc
 
 
 def clear_cuda_memory():
+    """Release Python refs then return unused CUDA blocks to the driver (best effort)."""
+    gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    gc.collect()
+        gc.collect()
 
 
 def generate_output_stream(
@@ -124,6 +126,7 @@ def generate_output_stream(
             del logits
             del logits_topk
             del logits_topk_idx
+            del probs_topk
 
             if verbose:
                 print(texts_topk[next_idx], end="", flush=True)
@@ -139,6 +142,7 @@ def generate_output_stream(
     finally:
         del prompt_ids
         del output_ids
+        del data
         clear_cuda_memory()
 
 

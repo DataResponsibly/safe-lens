@@ -69,7 +69,6 @@ class WildGuard:
             )
 
             if self._model.device.type != "cpu":
-                # input_ids = input_ids["input_ids"].cuda()
                 input_ids = {k: v.cuda() for k, v in input_ids.items()}
 
             output = self._model.generate(
@@ -79,13 +78,12 @@ class WildGuard:
                 return_dict_in_generate=output_scores,
             )
 
-            if self._model.device.type != "cpu":
-                scores = output["scores"][-2].cpu()
-                del output, input_ids
-            else:
-                scores = output["scores"][-2]
-
             if output_scores:
+                if self._model.device.type != "cpu":
+                    scores = output["scores"][-2].cpu()
+                else:
+                    scores = output["scores"][-2]
+                del output, input_ids
                 return scores
 
             res = self._tokenizer.decode(
@@ -183,6 +181,11 @@ class WildGuardSafeNudge(ModelWrapper):
                     if verbose:
                         print("|||", end="")
                     nudged = True
+
+                    del logits_top
+                    del logits_top_idx
+                    del probs_top
+
                     yield json.dumps(
                         {
                             "idx_counter": -1,
@@ -202,6 +205,11 @@ class WildGuardSafeNudge(ModelWrapper):
                     input_ids = torch.cat((input_ids, next_piece), dim=1)
                     if verbose:
                         print(next_token_str, end="")
+
+                    del logits_top
+                    del logits_top_idx
+                    del probs_top
+
                     yield json.dumps(
                         {
                             "idx_counter": -1,
