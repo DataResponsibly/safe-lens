@@ -51,6 +51,8 @@ export default function Barplot({ data, onTickClick, disabled }) {
     if (!data || data.length === 0) return;
     if (size.width === 0 || size.height === 0) return;
 
+    const plotData = data.slice(0, 100);
+
     const { width: outerW, height: outerH } = size;
     const width = outerW - MARGIN.left - MARGIN.right;
     const height = outerH - MARGIN.top - MARGIN.bottom;
@@ -67,11 +69,11 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`)
       .attr("fill", "white");
 
-    const xMax = d3.max(data, (d) => d.prob) || 1;
+    const xMax = d3.max(plotData, (d) => d.prob) || 1;
     const xScale = d3.scaleLinear().domain([0, xMax]).range([0, width]);
     const yScale = d3
       .scaleBand()
-      .domain(data.map((d) => d.text))
+      .domain(plotData.map((d) => d.text))
       .range([0, height])
       .padding(0.1);
 
@@ -83,10 +85,11 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("fill", "none");
 
     const yAxis = svg.append("g").call(d3.axisLeft(yScale));
+    const tickFontSize = Math.min(13, Math.max(4, yScale.bandwidth() * 0.8));
     yAxis
       .selectAll("text")
       .attr("fill", "#f5f6fa")
-      .style("font-size", "13px")
+      .style("font-size", `${tickFontSize}px`)
       .style("font-weight", "500");
 
     yAxis
@@ -105,7 +108,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
 
     svg
       .selectAll(".bar")
-      .data(data)
+      .data(plotData)
       .enter()
       .append("rect")
       .attr("class", "bar")
@@ -115,9 +118,10 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("width", (d) => xScale(d.prob))
       .attr("fill", "white");
 
+    const labelFontSize = Math.min(12, Math.max(4, yScale.bandwidth() * 0.8));
     svg
       .selectAll(".label")
-      .data(data)
+      .data(plotData)
       .enter()
       .append("text")
       .attr("class", "label")
@@ -125,7 +129,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("y", (d) => yScale(d.text) + yScale.bandwidth() / 2)
       .attr("dy", "0.35em")
       .attr("dx", "8px")
-      .style("font-size", "12px")
+      .style("font-size", `${labelFontSize}px`)
       .text((d) => (Number(d.prob) === 0 ? "<0.01" : d.prob))
       .attr("fill", "white");
   }, [data, size]);
