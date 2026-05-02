@@ -43,7 +43,7 @@ spec:
               cpu: 8
               memory: 24Gi
               nvidia.com/gpu: 1
-          # Until this succeeds, liveness/readiness do not run (avoids VRAM restarts during model load).
+          # Until this succeeds, liveness/readiness do not run (long model load / slow HTTP readiness).
           startupProbe:
             httpGet:
               path: /

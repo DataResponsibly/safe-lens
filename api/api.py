@@ -20,6 +20,7 @@ from .safenudge import SafeNudge
 from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
 from .wildguard_safenudge import WildGuard, WildGuardSafeNudge
 from .qwenqguard_safenudge import Qwen3GuardSafeNudge
+from . import metrics
 import pickle
 
 CUDA = torch.cuda.is_available()
@@ -78,6 +79,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(metrics.router)
 
 
 @app.get("/")
@@ -86,7 +88,7 @@ async def root():
     for route in app.routes:
         if not isinstance(route, APIRoute):
             continue
-        if route.path in {"/docs", "/openapi.json", "/redoc"}:
+        if route.path in {"/docs", "/openapi.json", "/redoc", "/metrics"}:
             continue
         methods = sorted(m for m in route.methods or set() if m not in {"HEAD", "OPTIONS"})
         routes.append(
