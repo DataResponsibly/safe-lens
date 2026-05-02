@@ -184,11 +184,20 @@ async def regenerate(
     """
     Generate an output stream based on a prompt, using a LLM (Llama 3.2 1B Instruct).
     """
+    data = None
     if (content is not None) and (token_pos is not None) and (new_token is not None):
-        content = parse_connected_json_objects(content)
-        new_token_idx = content[token_pos]["texts"].index(new_token)
-        content = json.dumps(content)
-        data = edit(content, token_pos, new_token_idx)
+        content_list = parse_connected_json_objects(content)
+        
+        try:
+            new_token_idx = content_list[token_pos]["texts"].index(new_token)
+        except (IndexError, ValueError) as e:
+            # If the index is out of bounds (e.g. truncated history) or token isn't found
+            return StreamingResponse(
+                iter([json.dumps({"error": f"Invalid token or position. Details: {e}"}) + "\n"]),
+                media_type="application/json"
+            )
+            
+        data = edit_output(content_list, token_pos, new_token_idx)
 
     result = generate_output_stream(
         init_prompt=init_prompt,

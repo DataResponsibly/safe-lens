@@ -186,13 +186,23 @@ def edit_output(data: list, token_pos: int, new_token: int) -> pd.DataFrame:
 
 
 def parse_connected_json_objects(s):
+    try:
+        # Client sends JSON.stringify(tokens) which is a valid JSON array
+        return json.loads(s)
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback to regex matching if the input is not a valid JSON array
     json_objects = re.findall(r"\{.*?\}", s)
 
     parsed = []
     for obj in json_objects:
         try:
-            parsed.append(ast.literal_eval(obj))
-        except Exception as e:
-            print(f"Failed to parse: {obj}. Error: {e}")
+            parsed.append(json.loads(obj))
+        except Exception:
+            try:
+                parsed.append(ast.literal_eval(obj))
+            except Exception as e:
+                print(f"Failed to parse: {obj}. Error: {e}")
 
     return parsed

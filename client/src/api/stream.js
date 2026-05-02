@@ -55,9 +55,9 @@ export async function* streamEndpoint(url, params, signal) {
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
-      // Split on the backend's `}\n` delimiter. The last piece is a partial
+      // Split on the backend's newline delimiter. The last piece is a partial
       // chunk that we keep in the buffer for the next iteration.
-      const parts = buffer.split("}\n");
+      const parts = buffer.split("\n");
       buffer = parts.pop() ?? "";
 
       for (const part of parts) {
