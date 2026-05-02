@@ -40,4 +40,5 @@ data:
               summary: Backend GPU memory utilization above 80%
               description: >-
                 At least one CUDA device reports safe_lens_gpu_memory_utilization_ratio > 0.8
-                for 2 minutes. Hook Alertmanager or an external controller for rollout/restart.
+                for 2 minutes. Optional: CronJob backend-prometheus-rollout also restarts on
+                instant Prometheus queries; use Alertmanager for notifications.

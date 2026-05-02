@@ -1,0 +1,131 @@
+# Queries Prometheus for GPU utilization (same series as Grafana) and rolls the
+# backend Deployment when the value is above the threshold. Uses in-cluster
+# ServiceAccount token (no kubeconfig file required).
+#
+# Requires Prometheus deployed (svc/prometheus:9090) and backend exposing /metrics.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend-prometheus-rollout
+  labels:
+    app: safe-lens
+    component: backend-prometheus-rollout
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: backend-prometheus-rollout
+  labels:
+    app: safe-lens
+    component: backend-prometheus-rollout
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backend-prometheus-rollout
+  labels:
+    app: safe-lens
+    component: backend-prometheus-rollout
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: backend-prometheus-rollout
+subjects:
+  - kind: ServiceAccount
+    name: backend-prometheus-rollout
+    apiGroup: ""
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backend-prometheus-rollout
+  labels:
+    app: safe-lens
+    component: backend-prometheus-rollout
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: backend-prometheus-rollout
+          restartPolicy: OnFailure
+          containers:
+            - name: rollout
+              image: alpine/k8s:1.31.13
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: TARGET_DEPLOYMENT
+                  value: backend
+                - name: PROMETHEUS_URL
+                  value: http://prometheus:9090
+                - name: VRAM_THRESHOLD
+                  value: "0.8"
+                # Instant PromQL; must return one scalar or one vector sample (max() is fine).
+                - name: PROMQL
+                  value: "max(safe_lens_gpu_memory_utilization_ratio)"
+                - name: COOLDOWN_SECONDS
+                  value: "1800"
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  NS="$POD_NAMESPACE"
+                  DEPLOY="$TARGET_DEPLOYMENT"
+                  THRESH="$VRAM_THRESHOLD"
+                  NOW=$(date +%s)
+
+                  last=$(
+                    kubectl get deployment "$DEPLOY" -n "$NS" -o \
+                      "jsonpath={.metadata.annotations['safe-lens/last-prometheus-rollout']}" 2>/dev/null || true
+                  )
+                  valid=0
+                  case $last in
+                    ""|*[!0-9]*) valid=0 ;;
+                    *) valid=1 ;;
+                  esac
+                  if [ "$valid" -eq 1 ] && [ "$((NOW - last))" -lt "$COOLDOWN_SECONDS" ]; then
+                    echo "Within cooldown (${COOLDOWN_SECONDS}s), skipping."
+                    exit 0
+                  fi
+
+                  set +e
+                  RESP=$(curl -fsS -G "${PROMETHEUS_URL}/api/v1/query" \
+                    --data-urlencode "query=${PROMQL}" 2>/dev/null)
+                  RC=$?
+                  set -e
+                  if [ "$RC" -ne 0 ] || [ -z "$RESP" ]; then
+                    echo "Prometheus query failed; skipping."
+                    exit 0
+                  fi
+
+                  VAL=$(printf '%s' "$RESP" | jq -r '.data.result[0].value[1] // empty')
+                  if [ -z "$VAL" ] || [ "$VAL" = "null" ]; then
+                    echo "No metric sample from Prometheus; skipping."
+                    exit 0
+                  fi
+
+                  OVER=$(awk -v v="$VAL" -v t="$THRESH" 'BEGIN { if (v + 0 > t + 0) print 1; else print 0 }')
+                  if [ "$OVER" != "1" ]; then
+                    echo "Utilization ${VAL} at or below ${THRESH}; no action."
+                    exit 0
+                  fi
+
+                  echo "Utilization ${VAL} above ${THRESH}; rolling deployment."
+                  kubectl annotate deployment "$DEPLOY" -n "$NS" \
+                    "safe-lens/last-prometheus-rollout=${NOW}" --overwrite
+                  kubectl rollout restart "deployment/$DEPLOY" -n "$NS"
