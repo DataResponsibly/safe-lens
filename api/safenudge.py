@@ -92,8 +92,8 @@ class ModelWrapper(object):
 
     def get_top_logits_from_ids(self, input_ids):
         logits, last_hidden_state = self._forward_pass_from_ids(input_ids)
-        logits = logits[-1, -1]
-        last_hidden_state = last_hidden_state[0, -1]
+        logits = logits[-1]
+        last_hidden_state = last_hidden_state[0]
 
         if self.mode is None:
             logits_top, logits_top_idx = torch.topk(logits, len(logits))
@@ -124,8 +124,12 @@ class ModelWrapper(object):
                 output_hidden_states=True,
                 output_attentions=False,
             )
-            logits = outputs["logits"]
-            last_hidden_state = outputs["hidden_states"][-1]
+            # We only need the last token's representation. Slicing with [-1:] ensures 
+            # this works correctly for both use_cache=False (where sequence length grows) 
+            # and use_cache=True (where sequence length is 1).
+            # .clone() disconnects the memory from any larger internal buffers.
+            logits = outputs["logits"][:, -1, :].clone()
+            last_hidden_state = outputs["hidden_states"][-1][:, -1, :].clone()
             del outputs
             del input_ids
 
