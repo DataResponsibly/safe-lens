@@ -11,7 +11,7 @@ router = APIRouter(tags=["monitoring"])
 
 gpu_memory_utilization_ratio = Gauge(
     "safe_lens_gpu_memory_utilization_ratio",
-    "Fraction of GPU device memory in use (0–1).",
+    "Fraction of GPU device memory in use (0 through 1).",
     ["device_index"],
 )
 
