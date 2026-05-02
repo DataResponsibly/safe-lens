@@ -43,6 +43,13 @@ spec:
               cpu: 8
               memory: 24Gi
               nvidia.com/gpu: 1
+          # Until this succeeds, liveness/readiness do not run (avoids VRAM restarts during model load).
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 120
           readinessProbe:
             httpGet:
               path: /
