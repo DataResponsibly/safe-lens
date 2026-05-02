@@ -51,7 +51,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
     if (!data || data.length === 0) return;
     if (size.width === 0 || size.height === 0) return;
 
-    const plotData = data.slice(0, 100);
+    const plotData = data.slice(0, 50);
 
     const { width: outerW, height: outerH } = size;
     const width = outerW - MARGIN.left - MARGIN.right;
@@ -85,7 +85,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("fill", "none");
 
     const yAxis = svg.append("g").call(d3.axisLeft(yScale));
-    const tickFontSize = Math.min(13, Math.max(4, yScale.bandwidth() * 0.8));
+    const tickFontSize = Math.min(15, Math.max(5, yScale.bandwidth() * 0.9));
     yAxis
       .selectAll("text")
       .attr("fill", "#f5f6fa")
@@ -118,7 +118,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("width", (d) => xScale(d.prob))
       .attr("fill", "white");
 
-    const labelFontSize = Math.min(12, Math.max(4, yScale.bandwidth() * 0.8));
+    const labelFontSize = Math.min(14, Math.max(5, yScale.bandwidth() * 0.9));
     svg
       .selectAll(".label")
       .data(plotData)
