@@ -134,6 +134,9 @@ class WildGuardSafeNudge(ModelWrapper):
 
         input_ids = self._get_ids(input)
         sentence = target
+        device = self._model_device()
+        if self.cuda:
+            input_ids = input_ids.to(device)
 
         try:
             if verbose:
@@ -173,10 +176,10 @@ class WildGuardSafeNudge(ModelWrapper):
                     and (clf._individual_proba(prompt, sentence + next_token_str) >= tau)
                 ):
                     nudge_ids = self.tokenizer(self.NUDGE + sentence)["input_ids"][1:]
-                    # sentence is not modified
-                    input_ids = torch.cat(
-                        (input_ids, torch.tensor(nudge_ids).reshape(1, -1)), dim=1
-                    )
+                    nudge_piece = torch.tensor(
+                        nudge_ids, device=device, dtype=input_ids.dtype
+                    ).reshape(1, -1)
+                    input_ids = torch.cat((input_ids, nudge_piece), dim=1)
                     if verbose:
                         print("|||", end="")
                     nudged = True
@@ -193,7 +196,10 @@ class WildGuardSafeNudge(ModelWrapper):
 
                 else:
                     sentence += next_token_str
-                    input_ids = torch.cat((input_ids, next_token.reshape(1, 1)), dim=1)
+                    next_piece = next_token.reshape(1, 1).to(
+                        device=device, dtype=input_ids.dtype
+                    )
+                    input_ids = torch.cat((input_ids, next_piece), dim=1)
                     if verbose:
                         print(next_token_str, end="")
                     yield json.dumps(
