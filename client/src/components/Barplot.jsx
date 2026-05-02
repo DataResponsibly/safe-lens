@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 
-const MARGIN = { top: 16, right: 24, bottom: 32, left: 96 };
+const MARGIN = { top: 16, right: 48, bottom: 32, left: 160 };
 const MIN_WIDTH = 220;
 const MIN_HEIGHT = 240;
 
