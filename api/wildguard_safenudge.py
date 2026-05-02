@@ -141,8 +141,10 @@ class WildGuardSafeNudge(ModelWrapper):
 
             j = 0
             while True:
-                logits_top, logits_top_idx, last_hidden_state = (
-                    self.get_top_logits_from_ids(input_ids)
+                logits_top, logits_top_idx, _ = (
+                    self.get_top_logits_from_ids(
+                        input_ids, need_hidden_states=False
+                    )
                 )
                 probs_top = torch.nn.functional.softmax(
                     logits_top / self.temperature, dim=-1
@@ -153,10 +155,9 @@ class WildGuardSafeNudge(ModelWrapper):
 
                 j += 1
                 if (next_token.item() == self.tokenizer.eos_token_id) or (j > max_tokens):
-                    _, last_hidden_state = self._forward_pass_from_ids(input_ids)
                     if verbose:
                         print("\n")
-                    return sentence, last_hidden_state, nudged
+                    return
 
                 if self.tokenizer.name_or_path.find("mistral") > -1:
                     next_token_str = self.tokenizer.convert_ids_to_tokens(

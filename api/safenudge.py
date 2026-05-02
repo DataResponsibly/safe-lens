@@ -90,10 +90,13 @@ class ModelWrapper(object):
             del logits_top_idx
             del probs_top
 
-    def get_top_logits_from_ids(self, input_ids):
-        logits, last_hidden_state = self._forward_pass_from_ids(input_ids)
+    def get_top_logits_from_ids(self, input_ids, need_hidden_states=True):
+        logits, last_hidden_state = self._forward_pass_from_ids(
+            input_ids, need_hidden_states=need_hidden_states
+        )
         logits = logits[-1]
-        last_hidden_state = last_hidden_state[0]
+        if last_hidden_state is not None:
+            last_hidden_state = last_hidden_state[0]
 
         if self.mode is None:
             logits_top, logits_top_idx = torch.topk(logits, len(logits))
@@ -113,7 +116,7 @@ class ModelWrapper(object):
 
         return input_ids
 
-    def _forward_pass_from_ids(self, input_ids):
+    def _forward_pass_from_ids(self, input_ids, need_hidden_states=True):
         if self.cuda:
             input_ids = input_ids.cuda()
 
@@ -121,21 +124,21 @@ class ModelWrapper(object):
             outputs = self.model(
                 input_ids,
                 use_cache=False,
-                output_hidden_states=True,
+                output_hidden_states=need_hidden_states,
                 output_attentions=False,
             )
-            # We only need the last token's representation. Slicing with [-1:] ensures 
-            # this works correctly for both use_cache=False (where sequence length grows) 
-            # and use_cache=True (where sequence length is 1).
-            # .clone() disconnects the memory from any larger internal buffers.
             logits = outputs["logits"][:, -1, :].clone()
-            last_hidden_state = outputs["hidden_states"][-1][:, -1, :].clone()
+            last_hidden_state = None
+            if need_hidden_states:
+                last_hidden_state = outputs["hidden_states"][-1][:, -1, :].clone()
             del outputs
             del input_ids
 
         if self.cuda:
             logits = logits.cpu()
-            last_hidden_state = last_hidden_state.cpu()
+            if last_hidden_state is not None:
+                last_hidden_state = last_hidden_state.cpu()
+            torch.cuda.empty_cache()
 
         return logits, last_hidden_state
 
@@ -165,8 +168,11 @@ class SafeNudge(ModelWrapper):
 
             j = 0
             while True:
+                need_hidden = not nudged and j >= 4
                 logits_top, logits_top_idx, last_hidden_state = (
-                    self.get_top_logits_from_ids(input_ids)
+                    self.get_top_logits_from_ids(
+                        input_ids, need_hidden_states=need_hidden
+                    )
                 )
                 probs_top = torch.nn.functional.softmax(
                     logits_top / self.temperature, dim=-1
@@ -177,10 +183,9 @@ class SafeNudge(ModelWrapper):
 
                 j += 1
                 if (next_token.item() == self.tokenizer.eos_token_id) or (j > max_tokens):
-                    _, last_hidden_state = self._forward_pass_from_ids(input_ids)
                     if verbose:
                         print("\n")
-                    return sentence, last_hidden_state, nudged
+                    return
 
                 if self.tokenizer.name_or_path.find("mistral") > -1:
                     next_token_str = self.tokenizer.convert_ids_to_tokens(
@@ -199,19 +204,18 @@ class SafeNudge(ModelWrapper):
                     )
                 ):
                     nudge_ids = self.tokenizer(SafeNudge.NUDGE + sentence)["input_ids"][1:]
-                    # sentence is not modified
                     input_ids = torch.cat(
                         (input_ids, torch.tensor(nudge_ids).reshape(1, -1)), dim=1
                     )
                     if verbose:
                         print("|||", end="")
                     nudged = True
-                    
+
                     del logits_top
                     del logits_top_idx
                     del probs_top
                     del last_hidden_state
-                    
+
                     yield json.dumps(
                         {
                             "idx_counter": -1,
@@ -227,12 +231,12 @@ class SafeNudge(ModelWrapper):
                     input_ids = torch.cat((input_ids, next_token.reshape(1, 1)), dim=1)
                     if verbose:
                         print(next_token_str, end="")
-                        
+
                     del logits_top
                     del logits_top_idx
                     del probs_top
                     del last_hidden_state
-                    
+
                     yield json.dumps(
                         {
                             "idx_counter": -1,

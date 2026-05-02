@@ -137,7 +137,9 @@ class Qwen3GuardSafeNudge(ModelWrapper):
         j = 0
         try:
             while True:
-                logits_top, logits_top_idx, _ = self.get_top_logits_from_ids(input_ids)
+                logits_top, logits_top_idx, _ = self.get_top_logits_from_ids(
+                    input_ids, need_hidden_states=False
+                )
                 probs_top = torch.nn.functional.softmax(logits_top / self.temperature, dim=-1)
                 next_token = logits_top_idx[
                     self._rng.choice(len(logits_top_idx), p=probs_top.detach().numpy())
