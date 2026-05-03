@@ -23,10 +23,9 @@ WORKDIR /src
 
 COPY ./requirements.txt /src/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /src/requirements.txt 
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu128
+RUN pip install --no-cache-dir --torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
 RUN pip install --no-cache-dir ninja
 RUN pip install --no-cache-dir flash-attn --no-build-isolation
-
 
 COPY ./api /src/api
 
