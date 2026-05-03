@@ -197,7 +197,7 @@ export default function App() {
         T: temperature,
         max_new_tokens: maxNewTokens,
         sleep_time: settings.sleepTime,
-        verbose: true,
+        verbose: false,
         random_state: seed,
       };
       runStream(streamRegenerate, params);
