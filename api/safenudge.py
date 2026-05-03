@@ -43,7 +43,7 @@ class ModelWrapper(object):
 
         input_ids = self._get_ids(input)
 
-        _, last_hidden_state = self._forward_pass_from_ids(input_ids)
+        _, last_hidden_state, _ = self._forward_pass_from_ids(input_ids)
         last_hidden_state = last_hidden_state[0, -1]
         return last_hidden_state
 
@@ -66,10 +66,11 @@ class ModelWrapper(object):
 
         try:
             j = 0
+            past_key_values = None
             while True:
 
-                logits_top, logits_top_idx, _ = self.get_top_logits_from_ids(
-                    input_ids, need_hidden_states=False
+                logits_top, logits_top_idx, _, past_key_values = self.get_top_logits_from_ids(
+                    input_ids, need_hidden_states=False, past_key_values=past_key_values
                 )
                 probs_top = torch.nn.functional.softmax(
                     logits_top / self.temperature, dim=-1
@@ -81,7 +82,8 @@ class ModelWrapper(object):
                 j += 1
                 if (next_token.item() == self.tokenizer.eos_token_id) or (j > max_tokens):
                     del logits_top, logits_top_idx, probs_top
-                    _, last_hidden_state = self._forward_pass_from_ids(input_ids)
+                    # Full recompute needed for final hidden state (past_key_values already advanced)
+                    _, last_hidden_state, _ = self._forward_pass_from_ids(input_ids)
                     if verbose:
                         print("\n")
                     return sentence, last_hidden_state
@@ -108,13 +110,14 @@ class ModelWrapper(object):
         finally:
             try:
                 del input_ids
+                del past_key_values
             except NameError:
                 pass
             clear_cuda_memory()
 
-    def get_top_logits_from_ids(self, input_ids, need_hidden_states=True):
-        logits, last_hidden_state = self._forward_pass_from_ids(
-            input_ids, need_hidden_states=need_hidden_states
+    def get_top_logits_from_ids(self, input_ids, need_hidden_states=True, past_key_values=None):
+        logits, last_hidden_state, past_key_values = self._forward_pass_from_ids(
+            input_ids, need_hidden_states=need_hidden_states, past_key_values=past_key_values
         )
         logits = logits[-1]
         if last_hidden_state is not None:
@@ -131,7 +134,7 @@ class ModelWrapper(object):
             return False
 
         del logits
-        return logits_top, logits_top_idx, last_hidden_state
+        return logits_top, logits_top_idx, last_hidden_state, past_key_values
 
     def _get_ids(self, input):
         input_ids = self.tokenizer.apply_chat_template(input, return_tensors="pt")
@@ -139,15 +142,17 @@ class ModelWrapper(object):
 
         return input_ids
 
-    def _forward_pass_from_ids(self, input_ids, need_hidden_states=True):
+    def _forward_pass_from_ids(self, input_ids, need_hidden_states=True, past_key_values=None):
         device = self._model_device()
         if self.cuda and input_ids.device != device:
             input_ids = input_ids.to(device)
 
         with torch.no_grad():
+            model_input = input_ids[:, -1:] if past_key_values is not None else input_ids
             outputs = self.model(
-                input_ids,
-                use_cache=False,
+                model_input,
+                use_cache=True,
+                past_key_values=past_key_values,
                 output_hidden_states=need_hidden_states,
                 output_attentions=False,
             )
@@ -155,6 +160,7 @@ class ModelWrapper(object):
             last_hidden_state = None
             if need_hidden_states:
                 last_hidden_state = outputs["hidden_states"][-1][:, -1, :].clone()
+            new_past_key_values = outputs.past_key_values
             del outputs
 
         if self.cuda:
@@ -162,7 +168,7 @@ class ModelWrapper(object):
             if last_hidden_state is not None:
                 last_hidden_state = last_hidden_state.cpu()
 
-        return logits, last_hidden_state
+        return logits, last_hidden_state, new_past_key_values
 
 
 class SafeNudge(ModelWrapper):
@@ -192,11 +198,12 @@ class SafeNudge(ModelWrapper):
                 print(sentence, end="")
 
             j = 0
+            past_key_values = None
             while True:
                 need_hidden = not nudged and j >= 4
-                logits_top, logits_top_idx, last_hidden_state = (
+                logits_top, logits_top_idx, last_hidden_state, past_key_values = (
                     self.get_top_logits_from_ids(
-                        input_ids, need_hidden_states=need_hidden
+                        input_ids, need_hidden_states=need_hidden, past_key_values=past_key_values
                     )
                 )
                 probs_top = torch.nn.functional.softmax(
@@ -238,6 +245,7 @@ class SafeNudge(ModelWrapper):
                         dtype=input_ids.dtype,
                     ).reshape(1, -1)
                     input_ids = torch.cat((input_ids, nudge_piece), dim=1)
+                    past_key_values = None  # nudge appends many tokens; must reprefill
                     if verbose:
                         print("|||", end="")
                     nudged = True
@@ -284,6 +292,7 @@ class SafeNudge(ModelWrapper):
         finally:
             try:
                 del input_ids
+                del past_key_values
             except NameError:
                 pass
             clear_cuda_memory()

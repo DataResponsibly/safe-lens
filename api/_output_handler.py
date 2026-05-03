@@ -83,19 +83,34 @@ def generate_output_stream(
             prompt_ids = prompt_ids.cuda()
             output_ids = output_ids.cuda()
 
+        past_key_values = None
+        next_id = None
+
         while not (output.find(TERMINATOR) >= 0 or output_ids.shape[-1] >= max_new_tokens):
 
             with torch.no_grad():
-                all_ids = torch.cat([prompt_ids, output_ids], dim=-1)
-                outputs = model(
-                    all_ids,
-                    use_cache=False,
-                    output_hidden_states=False,
-                    output_attentions=False,
-                )
+                if past_key_values is None:
+                    # Prefill: process full prompt + any prior output tokens
+                    all_ids = torch.cat([prompt_ids, output_ids], dim=-1)
+                    outputs = model(
+                        all_ids,
+                        use_cache=True,
+                        output_hidden_states=False,
+                        output_attentions=False,
+                    )
+                    del all_ids
+                else:
+                    # Decode: process only the single new token
+                    outputs = model(
+                        next_id,
+                        use_cache=True,
+                        past_key_values=past_key_values,
+                        output_hidden_states=False,
+                        output_attentions=False,
+                    )
                 logits = outputs["logits"][0, -1, :].clone().float().cpu()
+                past_key_values = outputs.past_key_values
                 del outputs
-                del all_ids
 
             logits_topk, logits_topk_idx = torch.topk(logits, k)
 
@@ -142,6 +157,8 @@ def generate_output_stream(
     finally:
         del prompt_ids
         del output_ids
+        del past_key_values
+        del next_id
         del data
         clear_cuda_memory()
 
