@@ -1,32 +1,42 @@
+# Stage 1: compile packages that require nvcc (flash-attn)
+FROM nvidia/cuda:12.8.2-devel-ubuntu24.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3 \
+    python3-pip \
+    python-is-python3 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+RUN pip install --no-cache-dir --upgrade setuptools
+
+COPY ./requirements.txt /requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /requirements.txt
+RUN pip install --no-cache-dir torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
+RUN pip install --no-cache-dir ninja
+RUN pip install --no-cache-dir flash-attn --no-build-isolation
+
+
+# Stage 2: lean runtime image
 FROM nvidia/cuda:12.8.2-runtime-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    build-essential \
     python3 \
     python3-pip \
-    python-is-python3
+    python-is-python3 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Clean up
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Allow pip to install system-wide in Ubuntu 24.04
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
-# Verify installations
-RUN python --version
-RUN pip --version
-RUN pip install --no-cache-dir --upgrade setuptools
+# Copy all installed Python packages from the build stage
+COPY --from=builder /usr/local/lib/python3.12 /usr/local/lib/python3.12
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 WORKDIR /src
-
-COPY ./requirements.txt /src/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /src/requirements.txt 
-RUN pip install --no-cache-dir torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
-RUN pip install --no-cache-dir ninja
-RUN pip install --no-cache-dir flash-attn --no-build-isolation
-
 COPY ./api /src/api
 
 RUN useradd --create-home --shell /bin/bash appuser && \
