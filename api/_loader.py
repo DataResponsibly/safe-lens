@@ -12,11 +12,12 @@ def load_model(
     Load a model from Hugging Face model hub.
     """
     model = AutoModelForCausalLM.from_pretrained(
-        model_path, token=token, **kwargs  # , cache_dir=cache_dir, use_safetensors=True
+        model_path,
+        token=token,
+        attn_implementation="flash_attention_2" if cuda else "eager",
+        **kwargs
     )
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_path, token=token, **kwargs  # , cache_dir=cache_dir, use_safetensors=True
-    )
+    tokenizer = AutoTokenizer.from_pretrained(model_path, token=token)
 
     if cuda:
         model.to("cuda")
