@@ -95,20 +95,20 @@ export default function SettingsPanel({ settings, onChange }) {
             <input
               type="number"
               min="1"
-              max="200"
+              max="50"
               step="1"
               value={settings.k}
-              onChange={setNumber("k", { min: 1, max: 200, allowEmpty: true })}
+              onChange={setNumber("k", { min: 1, max: 50, allowEmpty: true })}
               className="w-24 h-[26px] bg-transparent border border-border px-2 text-fg"
             />
           </Row>
           <Row label="Temperature (T)">
             <input
               type="number"
-              max="5"
+              max="10"
               step="0.1"
               value={settings.T}
-              onChange={setNumber("T", { max: 5, allowEmpty: true })}
+              onChange={setNumber("T", { max: 10, allowEmpty: true })}
               className="w-24 h-[26px] bg-transparent border border-border px-2 text-fg"
             />
           </Row>

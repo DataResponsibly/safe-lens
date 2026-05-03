@@ -68,10 +68,10 @@ async def root():
 @app.post("/generate", summary="Generate an output stream based on a prompt, using a LLM (Llama 3.2 1B Instruct).")
 async def generate(
     init_prompt: str = Form(..., min_length=1, max_length=10000),
-    k: int = Form(30, ge=1, le=100),
+    k: int = Form(30, ge=1, le=50),
     T: float = Form(1, gt=0.0, le=10.0),
     tau: float = Form(0.5, ge=0.0, le=1.0),
-    max_new_tokens: int = Form(100, ge=1, le=500),
+    max_new_tokens: int = Form(100, ge=1, le=4096),
     sleep_time: float = Form(0.0, ge=0.0, le=2.0),
     verbose: bool = Form(False),
     random_state: Optional[int] = Form(None),
@@ -120,9 +120,9 @@ async def generate(
 @app.post("/regenerate", summary="Generate an output stream based on a prompt, using a LLM (Llama 3.2 1B Instruct). This endpoint is for regenerating output when user edits.")
 async def regenerate(
     init_prompt: str = Form(..., min_length=1, max_length=10000),
-    k: int = Form(30, ge=1, le=100),
+    k: int = Form(30, ge=1, le=50),
     T: float = Form(1, gt=0.0, le=10.0),
-    max_new_tokens: int = Form(100, ge=1, le=500),
+    max_new_tokens: int = Form(100, ge=1, le=4096),
     sleep_time: float = Form(0.0, ge=0.0, le=2.0),
     verbose: bool = Form(False),
     random_state: Optional[int] = Form(None),
