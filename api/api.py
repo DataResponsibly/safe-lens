@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 
 from dotenv import dotenv_values
 import torch
@@ -26,6 +27,8 @@ if "HF_TOKEN" in os.environ:
     TOKEN = os.environ["HF_TOKEN"]
 else:
     TOKEN = dotenv_values()["HF_TOKEN"]
+
+logger = logging.getLogger(__name__)
 
 ml_models = {}
 
@@ -81,7 +84,7 @@ async def generate(
     """
     Generate an output stream based on a prompt, using a LLM (Llama 3.2 1B Instruct).
     """
-    print(safenudge)
+    logger.info("generate called: safenudge=%s", safenudge)
     if not safenudge:
         data = generate_output_stream(
             init_prompt=init_prompt,

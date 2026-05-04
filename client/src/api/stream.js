@@ -38,8 +38,15 @@ export async function* streamEndpoint(url, params, signal) {
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Request to ${url} failed: ${res.status} ${text}`);
+    const friendlyMessages = {
+      429: "Too many requests — please wait a moment before trying again.",
+      422: "Invalid request parameters.",
+      500: "Server error. Please try again.",
+      502: "Server is unavailable. Please try again shortly.",
+      503: "Server is unavailable. Please try again shortly.",
+    };
+    const msg = friendlyMessages[res.status] ?? `Request failed (${res.status}).`;
+    throw new Error(msg);
   }
   if (!res.body) {
     throw new Error("Streaming response body unavailable");
