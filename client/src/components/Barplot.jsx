@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 
-const MARGIN = { top: 16, right: 48, bottom: 32, left: 160 };
+const MARGIN = { top: 16, right: 48, bottom: 8, left: 160 };
 const MIN_WIDTH = 220;
 const MIN_HEIGHT = 240;
 
@@ -76,13 +76,6 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .domain(plotData.map((d) => d.text))
       .range([0, height])
       .padding(0.1);
-
-    svg
-      .append("g")
-      .attr("transform", `translate(0, ${height})`)
-      .call(d3.axisBottom(xScale).ticks(5))
-      .selectAll("text")
-      .attr("fill", "none");
 
     const yAxis = svg.append("g").call(d3.axisLeft(yScale));
     const tickFontSize = Math.min(15, Math.max(5, yScale.bandwidth() * 0.9));
