@@ -104,7 +104,10 @@ export default function App() {
       }
       const temperature = resolveTemperature(settings.T);
       if (temperature === null) {
-        alert("Please enter a temperature value before generating.");
+        const msg = Number(settings.T) === 0
+          ? "Temperature cannot be 0 — use a low value like 0.01 instead."
+          : "Please enter a temperature value before generating.";
+        alert(msg);
         return;
       }
       const maxNewTokens = resolveMaxNewTokens(settings.maxNewTokens);
@@ -170,7 +173,10 @@ export default function App() {
       }
       const temperature = resolveTemperature(settings.T);
       if (temperature === null) {
-        alert("Please enter a temperature value before regenerating.");
+        const msg = Number(settings.T) === 0
+          ? "Temperature cannot be 0 — use a low value like 0.01 instead."
+          : "Please enter a temperature value before regenerating.";
+        alert(msg);
         return;
       }
       const maxNewTokens = resolveMaxNewTokens(settings.maxNewTokens);
