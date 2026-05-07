@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   maxNewTokens: 300,
   k: 10,
   T: 1,
+  target: "",
 };
 
 function resolveRandomSeed(input) {
@@ -131,6 +132,7 @@ export default function App() {
         verbose: false,
         random_state: seed,
         sleep_time: settings.sleepTime,
+        target: settings.target || undefined,
       };
       runStream(streamGenerate, params);
     },

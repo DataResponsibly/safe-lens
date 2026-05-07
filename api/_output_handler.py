@@ -27,6 +27,7 @@ def generate_output_stream(
     verbose=True,
     random_state=None,
     as_json=True,
+    target="",
 ):
     rng = np.random.default_rng(random_state)
     TERMINATOR = tokenizer.eos_token
@@ -47,7 +48,7 @@ def generate_output_stream(
                 ]
             )
 
-            output = ""
+            output = target
             output_ids = torch.tensor([], dtype=torch.long)
 
         else:
@@ -71,7 +72,7 @@ def generate_output_stream(
 
         prompt = [
             {"role": "user", "content": init_prompt},
-            {"role": "assistant", "content": ""},
+            {"role": "assistant", "content": target},
         ]
         prompt_ids = tokenizer.apply_chat_template(prompt, return_tensors="pt")[0][
             :-1

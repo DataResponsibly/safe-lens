@@ -91,6 +91,16 @@ export default function SettingsPanel({ settings, onChange }) {
           Advanced
         </summary>
         <div className="p-2 flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <span>Assistant prefix</span>
+            <textarea
+              rows={2}
+              placeholder="Optional assistant prefix..."
+              value={settings.target}
+              onChange={setField("target")}
+              className="w-full bg-transparent border border-border px-2 py-1 text-fg resize-none"
+            />
+          </div>
           <Row label="Top-k (k)">
             <input
               type="number"

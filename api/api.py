@@ -80,6 +80,7 @@ async def generate(
     random_state: Optional[int] = Form(None),
     data: Optional[list] = Form(None),
     safenudge: bool = Form(False),
+    target: Optional[str] = Form(None),
 ):
     """
     Generate an output stream based on a prompt, using a LLM (Llama 3.2 1B Instruct).
@@ -98,6 +99,7 @@ async def generate(
             verbose=verbose,
             random_state=random_state,
             data=data,
+            target=target or "",
         )
         return StreamingResponse(data, media_type="application/json")
     else:
@@ -112,7 +114,7 @@ async def generate(
         ).generate_moderated(
             prompt=init_prompt,
             clf=ml_models["SAFENUDGE_MODEL"],
-            target="",
+            target=target or "",
             tau=tau,
             max_tokens=max_new_tokens,
             verbose=verbose,
