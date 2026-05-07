@@ -238,7 +238,7 @@ class SafeNudge(ModelWrapper):
                         >= tau
                     )
                 ):
-                    nudge_ids = self.tokenizer(SafeNudge.NUDGE + sentence)["input_ids"][1:]
+                    nudge_ids = self.tokenizer(SafeNudge.NUDGE)["input_ids"][1:]
                     nudge_piece = torch.tensor(
                         nudge_ids,
                         device=device,
