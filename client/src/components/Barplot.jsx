@@ -86,6 +86,17 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .style("font-weight", "500");
 
     yAxis
+      .selectAll("text")
+      .text((d) => {
+        if (d === " ") return "[sp]";
+        if (d === "\n") return "↵";
+        if (d === "\t") return "→";
+        if (typeof d === "string" && d.trim() === "" && d.length > 0)
+          return `[${d.length}sp]`;
+        return d;
+      });
+
+    yAxis
       .selectAll(".tick")
       .style("cursor", "pointer")
       .on("click", function () {
@@ -95,8 +106,8 @@ export default function Barplot({ data, onTickClick, disabled }) {
           );
           return;
         }
-        const tickText = d3.select(this).select("text").text();
-        if (onTickClickRef.current) onTickClickRef.current(tickText);
+        const token = d3.select(this).datum();
+        if (onTickClickRef.current) onTickClickRef.current(token);
       });
 
     svg

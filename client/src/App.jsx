@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS = {
   sleepTime: 0,
   maxNewTokens: 300,
   k: 10,
-  T: 1.3,
+  T: 1,
 };
 
 function resolveRandomSeed(input) {
