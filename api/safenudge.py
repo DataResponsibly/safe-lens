@@ -188,10 +188,12 @@ class SafeNudge(ModelWrapper):
         ]
 
         input_ids = self._get_ids(input)
+        prompt_input_ids = input_ids.clone()
         sentence = target
         device = self._model_device()
         if self.cuda:
             input_ids = input_ids.to(device)
+            prompt_input_ids = prompt_input_ids.to(device)
 
         try:
             if verbose:
@@ -242,10 +244,10 @@ class SafeNudge(ModelWrapper):
                     nudge_piece = torch.tensor(
                         nudge_ids,
                         device=device,
-                        dtype=input_ids.dtype,
+                        dtype=prompt_input_ids.dtype,
                     ).reshape(1, -1)
-                    input_ids = torch.cat((input_ids, nudge_piece), dim=1)
-                    past_key_values = None  # nudge appends many tokens; must reprefill
+                    input_ids = torch.cat((prompt_input_ids, nudge_piece), dim=1)
+                    past_key_values = None  # full reset: unsafe tokens discarded, must reprefill
                     if verbose:
                         print("|||", end="")
                     nudged = True
@@ -292,6 +294,7 @@ class SafeNudge(ModelWrapper):
         finally:
             try:
                 del input_ids
+                del prompt_input_ids
                 del past_key_values
             except NameError:
                 pass
