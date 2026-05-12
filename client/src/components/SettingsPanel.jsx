@@ -65,13 +65,13 @@ export default function SettingsPanel({ settings, onChange }) {
       <div>
         <div className="flex items-center justify-between mb-1">
           <span>Delay</span>
-          <span className="text-fg/60">{Number(settings.sleepTime).toFixed(1)}s</span>
+          <span className="text-fg">{Number(settings.sleepTime).toFixed(1)}s</span>
         </div>
         <div className="relative">
-          <div className="absolute top-2 left-2 text-xs text-fg/50 pointer-events-none">
+          <div className="absolute top-2 left-2 text-xs text-fg pointer-events-none">
             0s
           </div>
-          <div className="absolute top-2 right-2 text-xs text-fg/50 pointer-events-none">
+          <div className="absolute top-2 right-2 text-xs text-fg pointer-events-none">
             2s
           </div>
           <input

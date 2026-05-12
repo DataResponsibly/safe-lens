@@ -63,7 +63,7 @@ export default function ChatInput({
           )}
         </button>
       </div>
-      <div className="mt-1 text-[11px] text-fg/50 hidden sm:block">
+      <div className="mt-1 text-[11px] text-fg hidden sm:block">
         Enter to send · Shift+Enter for newline
       </div>
     </div>
