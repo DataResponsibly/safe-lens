@@ -1,15 +1,15 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        // Match the existing dark terminal aesthetic
-        bg: "#212121",
-        panel: "#202c33",
-        input: "#2a3942",
-        border: "#7f8c8d",
-        fg: "#f5f6fa",
+        bg: "rgb(var(--color-bg) / <alpha-value>)",
+        panel: "rgb(var(--color-panel) / <alpha-value>)",
+        input: "rgb(var(--color-input) / <alpha-value>)",
+        border: "rgb(var(--color-border) / <alpha-value>)",
+        fg: "rgb(var(--color-fg) / <alpha-value>)",
         accent: "#27ae60",
         danger: "#c0392b",
       },

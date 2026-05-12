@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light mode (default) */
+:root {
+  --color-bg: 245 246 250;
+  --color-panel: 225 232 237;
+  --color-input: 213 221 227;
+  --color-border: 127 140 141;
+  --color-fg: 33 33 33;
+}
+
+/* Dark mode */
+.dark {
+  --color-bg: 33 33 33;
+  --color-panel: 32 44 51;
+  --color-input: 42 57 66;
+  --color-border: 127 140 141;
+  --color-fg: 245 246 250;
+}
+
 html,
 body,
 #root {
@@ -10,8 +28,8 @@ body,
 
 body {
   margin: 0;
-  background-color: #212121;
-  color: #f5f6fa;
+  background-color: rgb(var(--color-bg));
+  color: rgb(var(--color-fg));
   font-family: "Andale Mono", AndaleMono, ui-monospace, SFMono-Regular, Menlo,
     monospace;
   letter-spacing: 0px;
@@ -55,14 +73,14 @@ input[type="number"] {
   font-family: "Andale Mono", AndaleMono, monospace;
   letter-spacing: 1px;
   font-size: 12px;
-  fill: #f5f6fa;
+  fill: rgb(var(--color-fg));
   cursor: pointer;
 }
 .barplot-svg .bar {
   fill: rgb(39, 174, 96);
 }
 .barplot-svg .label {
-  fill: #ffffff;
+  fill: rgb(var(--color-fg));
   font-size: 12px;
 }
 
@@ -117,8 +135,8 @@ input[type="number"] {
   text-indent: -20px;
   word-spacing: 20px;
   white-space: nowrap;
-  background: #f5f6fa;
-  color: #f5f6fa;
+  background: rgb(var(--color-fg));
+  color: rgb(var(--color-fg));
   transition: transform cubic-bezier(0.3, 1.5, 0.7, 1) 0.2s;
 }
 .toggle:checked {
@@ -142,12 +160,12 @@ input[type="number"] {
   appearance: none;
   width: 25px;
   height: 25px;
-  background: #f5f6fa;
+  background: rgb(var(--color-fg));
   cursor: pointer;
 }
 .slider::-moz-range-thumb {
   width: 25px;
   height: 25px;
-  background: #f5f6fa;
+  background: rgb(var(--color-fg));
   cursor: pointer;
 }
