@@ -380,7 +380,7 @@ function DesktopSettingsDrawer({ onClose, children }) {
         }}
       >
         <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
-          <span className="uppercase tracking-wider text-xs text-fg/80">
+          <span className="uppercase tracking-wider text-xs text-fg">
             Settings
           </span>
           <button

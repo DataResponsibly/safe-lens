@@ -49,20 +49,20 @@ export default function ChatOutput({
     >
       {hasPrompt && (
         <div className="mb-3 select-text">
-          <div className="text-[10px] uppercase tracking-wider text-fg/50 mb-1">
+          <div className="text-[10px] uppercase tracking-wider text-fg mb-1">
             Prompt
           </div>
-          <div className="border-l-2 border-fg/30 pl-3 whitespace-pre-wrap break-words text-sm text-fg/80">
+          <div className="border-l-2 border-border pl-3 whitespace-pre-wrap break-words text-sm text-fg">
             {prompt}
           </div>
         </div>
       )}
       {(hasPrompt || hasTokens) && (
         <div className="text-sm text-fg">
-          <div className="text-[10px] uppercase tracking-wider text-fg/50 mb-1">
+          <div className="text-[10px] uppercase tracking-wider text-fg mb-1">
             Generation
           </div>
-          <span className="text-fg/60 mr-1">&gt;</span>
+          <span className="text-fg mr-1">&gt;</span>
           {tokens.map((token, i) => {
             const selected = token.idx_counter === selectedIdx;
             const bg = showUncertainty ? uncertaintyBg(token) : "transparent";
@@ -83,7 +83,7 @@ export default function ChatOutput({
         <div className="mt-4 text-danger text-sm">{errorMessage}</div>
       )}
       {!hasPrompt && !hasTokens && !errorMessage && (
-        <div className="text-fg/40 text-sm mt-2">
+        <div className="text-fg text-sm mt-2">
           Prompt the model to begin. Tokens appear here and you can tap any
           token to inspect or edit its probability distribution.
         </div>

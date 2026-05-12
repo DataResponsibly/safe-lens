@@ -145,7 +145,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
       {hasData ? (
         <svg ref={svgRef} className="barplot-svg block" />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-center text-fg/50 text-xs px-4">
+        <div className="absolute inset-0 flex items-center justify-center text-center text-fg text-xs px-4">
           Tap any generated token to inspect the top-k candidate probabilities
           here.
         </div>
