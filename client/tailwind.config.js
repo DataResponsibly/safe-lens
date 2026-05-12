@@ -10,8 +10,8 @@ export default {
         input: "rgb(var(--color-input) / <alpha-value>)",
         border: "rgb(var(--color-border) / <alpha-value>)",
         fg: "rgb(var(--color-fg) / <alpha-value>)",
-        accent: "#27ae60",
-        danger: "#c0392b",
+        accent: "rgb(var(--color-accent) / <alpha-value>)",
+        danger: "rgb(var(--color-danger) / <alpha-value>)",
       },
       fontFamily: {
         mono: [

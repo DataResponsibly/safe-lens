@@ -60,6 +60,8 @@ export default function App() {
       document.documentElement.classList.remove("dark");
     }
     localStorage.setItem("theme", isDark ? "dark" : "light");
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", isDark ? "#09090b" : "#ffffff");
   }, [isDark]);
 
   const [prompt, setPrompt] = useState("");
