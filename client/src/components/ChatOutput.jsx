@@ -6,7 +6,7 @@ function uncertaintyBg(token) {
   const p = probs[selected_idx];
   if (typeof p !== "number") return "transparent";
   const u = Math.max(0, Math.min(1, 1 - Number(p.toFixed(2))));
-  return `rgba(231, 76, 60, ${u})`;
+  return `rgb(var(--color-danger) / ${u})`;
 }
 
 export default function ChatOutput({

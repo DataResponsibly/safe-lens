@@ -81,7 +81,6 @@ export default function Barplot({ data, onTickClick, disabled }) {
     const tickFontSize = Math.min(15, Math.max(5, yScale.bandwidth() * 0.9));
     yAxis
       .selectAll("text")
-      .attr("fill", "#f5f6fa")
       .style("font-size", `${tickFontSize}px`)
       .style("font-weight", "500");
 
@@ -119,8 +118,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("y", (d) => yScale(d.text))
       .attr("x", 0)
       .attr("height", yScale.bandwidth())
-      .attr("width", (d) => xScale(d.prob))
-      .attr("fill", "white");
+      .attr("width", (d) => xScale(d.prob));
 
     const labelFontSize = Math.min(14, Math.max(5, yScale.bandwidth() * 0.9));
     svg
@@ -134,8 +132,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("dy", "0.35em")
       .attr("dx", "8px")
       .style("font-size", `${labelFontSize}px`)
-      .text((d) => (Number(d.prob) === 0 ? "<0.01" : d.prob))
-      .attr("fill", "white");
+      .text((d) => (Number(d.prob) === 0 ? "<0.01" : d.prob));
   }, [data, size]);
 
   const hasData = data && data.length > 0;
