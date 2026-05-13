@@ -3,9 +3,12 @@ import * as d3 from "d3";
 
 const MARGIN = { top: 16, right: 48, bottom: 8, left: 160 };
 const MIN_WIDTH = 220;
-const MIN_HEIGHT = 240;
-const MAX_BANDWIDTH = 20;
-const BAND_PADDING = 0.2;
+const BAR_HEIGHT = 18;
+const BAR_GAP = 4;
+const ROW_HEIGHT = BAR_HEIGHT + BAR_GAP;
+const PADDING_INNER = BAR_GAP / ROW_HEIGHT;
+const TICK_FONT_SIZE = 15;
+const LABEL_FONT_SIZE = 14;
 
 /**
  * React wrapper around the original D3 barplot from client/js/main.js (barplot_new).
@@ -19,7 +22,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
   const svgRef = useRef(null);
   const onTickClickRef = useRef(onTickClick);
   const disabledRef = useRef(disabled);
-  const [size, setSize] = useState({ width: 0, height: 0 });
+  const [width, setWidth] = useState(0);
 
   useEffect(() => {
     onTickClickRef.current = onTickClick;
@@ -33,10 +36,7 @@ export default function Barplot({ data, onTickClick, disabled }) {
     if (!el) return;
     const update = () => {
       const rect = el.getBoundingClientRect();
-      setSize({
-        width: Math.max(MIN_WIDTH, Math.floor(rect.width)),
-        height: Math.max(MIN_HEIGHT, Math.floor(rect.height)),
-      });
+      setWidth(Math.max(MIN_WIDTH, Math.floor(rect.width)));
     };
     update();
     const ro = new ResizeObserver(update);
@@ -51,29 +51,20 @@ export default function Barplot({ data, onTickClick, disabled }) {
     d3.select(svgEl).selectAll("*").remove();
 
     if (!data || data.length === 0) return;
-    if (size.width === 0 || size.height === 0) return;
+    if (width === 0) return;
 
     const plotData = data.slice(0, 50);
+    const n = plotData.length;
 
-    const { width: outerW, height: outerH } = size;
-    const width = outerW - MARGIN.left - MARGIN.right;
-    const height = outerH - MARGIN.top - MARGIN.bottom;
+    const outerW = width;
+    const contentHeight = n * ROW_HEIGHT - BAR_GAP;
+    const outerH = MARGIN.top + contentHeight + MARGIN.bottom;
+    const innerWidth = outerW - MARGIN.left - MARGIN.right;
 
     d3.select(svgEl)
       .attr("viewBox", `0 0 ${outerW} ${outerH}`)
-      .attr("preserveAspectRatio", "none")
       .attr("width", outerW)
       .attr("height", outerH);
-
-    // Fill the full height. If bandwidth would exceed MAX_BANDWIDTH, increase
-    // padding instead of shrinking the range — bars stay capped, gaps absorb
-    // the extra space.
-    const n = plotData.length;
-    const naturalBandwidth = (height / (n + BAND_PADDING)) * (1 - BAND_PADDING);
-    const bandPadding =
-      naturalBandwidth > MAX_BANDWIDTH
-        ? (height - MAX_BANDWIDTH * n) / (height + MAX_BANDWIDTH)
-        : BAND_PADDING;
 
     const svg = d3
       .select(svgEl)
@@ -82,18 +73,18 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("fill", "white");
 
     const xMax = d3.max(plotData, (d) => d.prob) || 1;
-    const xScale = d3.scaleLinear().domain([0, xMax]).range([0, width]);
+    const xScale = d3.scaleLinear().domain([0, xMax]).range([0, innerWidth]);
     const yScale = d3
       .scaleBand()
       .domain(plotData.map((d) => d.text))
-      .range([0, height])
-      .padding(bandPadding);
+      .range([0, contentHeight])
+      .paddingInner(PADDING_INNER)
+      .paddingOuter(0);
 
     const yAxis = svg.append("g").call(d3.axisLeft(yScale));
-    const tickFontSize = Math.min(15, Math.max(5, yScale.bandwidth() * 0.9));
     yAxis
       .selectAll("text")
-      .style("font-size", `${tickFontSize}px`)
+      .style("font-size", `${TICK_FONT_SIZE}px`)
       .style("font-weight", "500");
 
     yAxis
@@ -132,7 +123,6 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("height", yScale.bandwidth())
       .attr("width", (d) => xScale(d.prob));
 
-    const labelFontSize = Math.min(14, Math.max(5, yScale.bandwidth() * 0.9));
     svg
       .selectAll(".label")
       .data(plotData)
@@ -143,14 +133,14 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("y", (d) => yScale(d.text) + yScale.bandwidth() / 2)
       .attr("dy", "0.35em")
       .attr("dx", "8px")
-      .style("font-size", `${labelFontSize}px`)
+      .style("font-size", `${LABEL_FONT_SIZE}px`)
       .text((d) => (Number(d.prob) === 0 ? "<0.01" : d.prob));
-  }, [data, size]);
+  }, [data, width]);
 
   const hasData = data && data.length > 0;
 
   return (
-    <div ref={containerRef} className="w-full h-full relative">
+    <div ref={containerRef} className="w-full h-full relative overflow-y-auto">
       {hasData ? (
         <svg ref={svgRef} className="barplot-svg block" />
       ) : (
