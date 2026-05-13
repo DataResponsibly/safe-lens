@@ -61,7 +61,7 @@ export default function App() {
     }
     localStorage.setItem("theme", isDark ? "dark" : "light");
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", isDark ? "#0c0a09" : "#fafaf9");
+    if (meta) meta.setAttribute("content", isDark ? "#0c0a09" : "#fdf6e3");
   }, [isDark]);
 
   const [prompt, setPrompt] = useState("");
