@@ -4,6 +4,8 @@ import * as d3 from "d3";
 const MARGIN = { top: 16, right: 48, bottom: 8, left: 160 };
 const MIN_WIDTH = 220;
 const MIN_HEIGHT = 240;
+const MAX_BANDWIDTH = 20;
+const BAND_PADDING = 0.1;
 
 /**
  * React wrapper around the original D3 barplot from client/js/main.js (barplot_new).
@@ -63,10 +65,14 @@ export default function Barplot({ data, onTickClick, disabled }) {
       .attr("width", outerW)
       .attr("height", outerH);
 
+    const idealRange = (MAX_BANDWIDTH * plotData.length) / (1 - BAND_PADDING);
+    const rangeHeight = Math.min(height, idealRange);
+    const yOffset = Math.max(0, (height - rangeHeight) / 2);
+
     const svg = d3
       .select(svgEl)
       .append("g")
-      .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`)
+      .attr("transform", `translate(${MARGIN.left},${MARGIN.top + yOffset})`)
       .attr("fill", "white");
 
     const xMax = d3.max(plotData, (d) => d.prob) || 1;
@@ -74,8 +80,8 @@ export default function Barplot({ data, onTickClick, disabled }) {
     const yScale = d3
       .scaleBand()
       .domain(plotData.map((d) => d.text))
-      .range([0, height])
-      .padding(0.1);
+      .range([0, rangeHeight])
+      .padding(BAND_PADDING);
 
     const yAxis = svg.append("g").call(d3.axisLeft(yScale));
     const tickFontSize = Math.min(15, Math.max(5, yScale.bandwidth() * 0.9));
