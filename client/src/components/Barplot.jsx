@@ -4,7 +4,7 @@ import * as d3 from "d3";
 const MARGIN = { top: 16, right: 48, bottom: 8, left: 160 };
 const MIN_WIDTH = 220;
 const BAR_HEIGHT = 18;
-const BAR_GAP = 4;
+const BAR_GAP = 8;
 const ROW_HEIGHT = BAR_HEIGHT + BAR_GAP;
 const PADDING_INNER = BAR_GAP / ROW_HEIGHT;
 const TICK_FONT_SIZE = 15;
