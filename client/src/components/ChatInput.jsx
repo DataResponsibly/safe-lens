@@ -34,7 +34,7 @@ export default function ChatInput({
     >
       <div className="flex gap-2 items-stretch">
         <textarea
-          className="flex-1 min-w-0 resize-none bg-input text-fg border border-border p-2 min-h-[52px] max-h-40 outline-none focus:border-fg/60 text-base sm:text-sm"
+          className="flex-1 min-w-0 resize-none bg-input text-fg border border-border p-2 min-h-[52px] max-h-40 outline-none focus:border-fg text-base sm:text-sm"
           placeholder="What can I help you with?"
           value={value}
           onChange={(e) => onChange(e.target.value)}
