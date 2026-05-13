@@ -9,6 +9,11 @@ function uncertaintyBg(token) {
   return `rgb(var(--color-danger) / ${u})`;
 }
 
+function displayTokenText(text) {
+  if (text === "<|eot_id|>" || text === "<|end_of_text|>") return "■";
+  return text;
+}
+
 export default function ChatOutput({
   prompt,
   tokens,
@@ -73,7 +78,7 @@ export default function ChatOutput({
                 style={{ backgroundColor: bg }}
                 onClick={() => handleClick(token)}
               >
-                {token.selected_text}
+                {displayTokenText(token.selected_text)}
               </span>
             );
           })}
