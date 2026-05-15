@@ -16,6 +16,7 @@ function displayTokenText(text) {
 
 export default function ChatOutput({
   prompt,
+  prefix,
   tokens,
   selectedIdx,
   onSelectToken,
@@ -68,6 +69,9 @@ export default function ChatOutput({
             Generation
           </div>
           <span className="text-fg mr-1">&gt;</span>
+          {prefix && (
+            <span className="text-fg opacity-60 select-text">{prefix}</span>
+          )}
           {tokens.map((token, i) => {
             const selected = token.idx_counter === selectedIdx;
             const bg = showUncertainty ? uncertaintyBg(token) : "transparent";

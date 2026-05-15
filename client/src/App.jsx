@@ -68,6 +68,7 @@ export default function App() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [tokens, setTokens] = useState([]);
   const [submittedPrompt, setSubmittedPrompt] = useState("");
+  const [submittedTarget, setSubmittedTarget] = useState("");
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -134,6 +135,7 @@ export default function App() {
       }
 
       setSubmittedPrompt(trimmed);
+      setSubmittedTarget(settings.target || "");
       setPrompt("");
       setTokens([]);
       setSelectedIdx(null);
@@ -165,6 +167,7 @@ export default function App() {
     if (abortRef.current) abortRef.current.abort();
     setTokens([]);
     setSubmittedPrompt("");
+    setSubmittedTarget("");
     setSelectedIdx(null);
     setErrorMessage("");
   }, []);
@@ -307,6 +310,7 @@ export default function App() {
         <section className="flex flex-col flex-1 min-h-0 min-w-0 border-border md:border-r">
           <ChatOutput
             prompt={submittedPrompt}
+            prefix={submittedTarget}
             tokens={tokens}
             selectedIdx={selectedIdx}
             onSelectToken={handleSelectToken}
