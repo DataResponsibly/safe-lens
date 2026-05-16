@@ -9,6 +9,7 @@ metadata:
     haproxy.org/ssl-redirect: "true"
     haproxy.org/ssl-redirect-code: "301"
     haproxy.org/forwarded-for: "true"
+    hpc.nyu.edu/access: "public"
 spec:
   rules:
     - host: safe-lens.users.hsrn.nyu.edu
